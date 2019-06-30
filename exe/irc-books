@@ -9,12 +9,28 @@ require 'shellwords'
 require 'tempfile'
 require 'fileutils'
 require 'irc/books/chooser'
+require 'irc/books/msg_parser'
 
 EBOOKS = '#ebooks'
+IRC_HIGHWAY_URL = 'irc.irchighway.net'
 
 def on_next
   Timer(1, shots: 1) do
     yield
+  end
+end
+
+def process_chooser_command(cmd)
+  return false if cmd == Irc::Books::Chooser::QUIT_CMD
+
+  send_text_to_channel(EBOOKS, cmd)
+
+  true
+end
+
+def send_text_to_channel(channel, text)
+  on_next do
+    Channel(channel).send(Sanitize(text))
   end
 end
 
@@ -26,7 +42,7 @@ def main
     chooser = Irc::Books::Chooser.new
 
     configure do |conf|
-      conf.server = 'irc.irchighway.net'
+      conf.server = IRC_HIGHWAY_URL
       conf.channels = [EBOOKS]
       conf.nick = nick
     end
@@ -36,37 +52,27 @@ def main
     end
 
     on :join do |msg|
-      if msg.user == bot.nick
-        topic = msg.channel.topic.strip
-        search_bots = topic.split.select { |word| word.match(/@.*/) }
-        search_bots = search_bots.collect { |botnames| botnames.delete('@').downcase }
-        chooser.set_search_bots(search_bots)
+      return if msg.user != bot.nick
 
-        on_next do
-          begin
-            running = true
-            loop do
-              break unless running
+      search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
 
-              chooser.choose do |cmd|
-                if cmd == 'quit'
-                  running = false
-                else
-                  on_next do
-                    Channel(EBOOKS).send(Sanitize(cmd))
-                  end
-                end
-              end
+      chooser.set_search_bots(search_bots)
+
+      on_next do
+        begin
+          running = true
+          while running == true
+            chooser.choose do |cmd|
+              running = process_chooser_command(cmd)
             end
-          rescue StandardError => e
-            puts "error: #{e}"
-          ensure
-            bot.quit
-            sleep(2)
-            exit
           end
+        rescue StandardError => e
+          puts "error: #{e}"
+        ensure
+          bot.quit
+          sleep(2)
+          exit
         end
-
       end
     end
 

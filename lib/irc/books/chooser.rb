@@ -6,6 +6,7 @@ module Irc
   module Books
     class Chooser
       INFO_REGEX = '::INFO::'
+      QUIT_CMD = 'quit'
 
       def initialize
         @block = nil
@@ -30,7 +31,7 @@ module Irc
       end
 
       def quit
-        do_yield('quit')
+        do_yield(QUIT_CMD)
       end
 
       def choose_default_search_suffix
