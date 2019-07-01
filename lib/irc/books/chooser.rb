@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'irc/books/search_model'
 # class for choosing menus
 
 module Irc
@@ -8,7 +9,9 @@ module Irc
       INFO_REGEX = '::INFO::'
       QUIT_CMD = 'quit'
 
-      def initialize
+      def initialize(model)
+        @model = model
+
         @block = nil
 
         @cli = HighLine.new
@@ -16,7 +19,6 @@ module Irc
         @search_bots = []
         @search_bot = 'searchook'
         @search_suffix = 'epub rar'
-        choose_default_path('~/Downloads/ebooks')
 
         @searches = {}
         @results = {}
@@ -26,12 +28,18 @@ module Irc
         @preferred_downloader = nil
       end
 
-      def do_yield(cmd)
-        @block&.call(cmd)
+      def do_yield(text)
+        @block&.call(text)
       end
 
       def quit
         do_yield(QUIT_CMD)
+      end
+
+      def ask_nickname(&block)
+        @block = block
+        nick = @cli.ask 'What is your nickname?'
+        do_yield(nick)
       end
 
       def choose_default_search_suffix
@@ -59,7 +67,7 @@ module Irc
 
           pref_menu.choice("Change Download Path (#{@download_path})") do
             new_path = @cli.ask('What would you like the download path to be?') { |answer| answer.default = '' }
-            choose_default_path(new_path) unless new_path.empty?
+            @model.download_path = new_path
           end
 
           unless @downloaders.empty?
@@ -116,10 +124,6 @@ module Irc
             quit
           end
         end
-      end
-
-      def choose_default_path(path)
-        @download_path = File.expand_path(path)
       end
 
       def set_search_bots(bots)
@@ -266,7 +270,7 @@ module Irc
 
         file_path = file.path
         if matches.empty?
-          new_path = File.join(@download_path, filename)
+          new_path = File.join(@model.download_path, filename)
           FileUtils.mv(file_path, new_path, verbose: false)
           @downloads << new_path
           puts "New Download: #{new_path}"

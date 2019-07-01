@@ -8,7 +8,8 @@ module Irc
     module MsgParser
       SEARCH_BOT_REGEX = '@.*'
       def self.parse_search_bots_from_topic(msg)
-        search_bots = msg.channel.topic.strip.split.select { |word| word.match(/@.*/) }
+        words = msg.channel.topic.strip.split
+        search_bots = words.select { |word| word.match(/#{SEARCH_BOT_REGEX}/) }
         search_bots.collect { |botnames| botnames.delete('@').downcase }
       end
     end

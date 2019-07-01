@@ -10,6 +10,7 @@ require 'tempfile'
 require 'fileutils'
 require 'irc/books/chooser'
 require 'irc/books/msg_parser'
+require 'irc/books/search_model'
 
 EBOOKS = '#ebooks'
 IRC_HIGHWAY_URL = 'irc.irchighway.net'
@@ -35,16 +36,17 @@ def send_text_to_channel(channel, text)
 end
 
 def main
-  cli = HighLine.new
-
-  nick = cli.ask 'What is your nickname?'
   bot = Cinch::Bot.new do
-    chooser = Irc::Books::Chooser.new
+    model = Irc::Books::SearchModel.new
+    chooser = Irc::Books::Chooser.new(model)
+    chooser.ask_nickname do |nickname|
+      model.nickname = nickname
+    end
 
     configure do |conf|
       conf.server = IRC_HIGHWAY_URL
       conf.channels = [EBOOKS]
-      conf.nick = nick
+      conf.nick = model.nickname
     end
 
     on :connect do |_msg|
