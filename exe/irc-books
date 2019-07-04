@@ -21,14 +21,6 @@ def on_next
   end
 end
 
-def process_chooser_command(cmd)
-  return false if cmd == Irc::Books::Chooser::QUIT_CMD
-
-  send_text_to_channel(EBOOKS, cmd)
-
-  true
-end
-
 def send_text_to_channel(channel, text)
   on_next do
     Channel(channel).send(Sanitize(text))
@@ -39,6 +31,17 @@ def main
   bot = Cinch::Bot.new do
     model = Irc::Books::SearchModel.new
     chooser = Irc::Books::Chooser.new(model)
+
+    chooser.on_quit do
+      bot.quit
+      sleep(2)
+      exit
+    end
+
+    chooser.on_choice do |choice|
+      send_text_to_channel(EBOOKS, choice)
+    end
+
     chooser.ask_nickname do |nickname|
       model.nickname = nickname
     end
@@ -54,27 +57,16 @@ def main
     end
 
     on :join do |msg|
-      return if msg.user != bot.nick
+      puts "join: #{msg}"
+      return unless Irc::Books::MsgParser.bot_nick_msg?(bot, msg)
 
+      puts 'user bot join'
       search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
 
       chooser.set_search_bots(search_bots)
 
       on_next do
-        begin
-          running = true
-          while running == true
-            chooser.choose do |cmd|
-              running = process_chooser_command(cmd)
-            end
-          end
-        rescue StandardError => e
-          puts "error: #{e}"
-        ensure
-          bot.quit
-          sleep(2)
-          exit
-        end
+        chooser.choose
       end
     end
 

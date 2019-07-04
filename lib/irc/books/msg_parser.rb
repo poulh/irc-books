@@ -6,6 +6,10 @@ module Irc
   module Books
     # parse incoming irc msgs for meaningful values
     module MsgParser
+      def self.bot_nick_msg?(bot, msg)
+        bot.nick.downcase == msg.user.nick.downcase
+      end
+
       SEARCH_BOT_REGEX = '@.*'
       def self.parse_search_bots_from_topic(msg)
         words = msg.channel.topic.strip.split

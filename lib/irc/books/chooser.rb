@@ -13,6 +13,7 @@ module Irc
         @model = model
 
         @block = nil
+        @quit_block = nil
 
         @cli = HighLine.new
 
@@ -33,22 +34,24 @@ module Irc
       end
 
       def quit
-        do_yield(QUIT_CMD)
+        @quit_block&.call()
       end
 
-      def ask_nickname(&block)
+      def on_choice(&block)
         @block = block
+      end
+
+      def on_quit(&block)
+        @quit_block = block
+      end
+
+      def ask_nickname
         nick = @cli.ask 'What is your nickname?'
-        do_yield(nick)
+        yield(nick)
       end
 
       def choose_default_search_suffix
         @search_suffix = @cli.ask('What would you like the search suffix to be?')
-      end
-
-      def choose(&block)
-        @block = block
-        main_menu
       end
 
       def choose_preferences
@@ -231,6 +234,17 @@ module Irc
 
       def request_download
         nil
+      end
+
+      def choose
+        raise 'callbacks not initialized' unless @block && @quit_block
+
+        loop do
+          main_menu
+        end
+      rescue StandardError => e
+        puts e
+        exit
       end
 
       def parse_private_msg(user, msg)
