@@ -3,7 +3,8 @@
 module Irc
   module Books
     class SearchModel
-      attr_accessor :nickname, :search_bots, :active_searches, :search_results, :downloads
+      attr_accessor :search_bots, :search_suffix
+      attr_accessor :active_searches, :downloads, :search_results, :nickname
       attr_reader :download_path
       def initialize
         @search_bots = []
@@ -11,6 +12,7 @@ module Irc
         @search_results = {}
         @downloads = []
 
+        @search_suffx = 'epub'
         @download_path = '~/Downloads/ebooks'
       end
 

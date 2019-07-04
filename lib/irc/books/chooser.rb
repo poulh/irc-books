@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require 'irc/books/search_model'
+require 'irc/books/questions'
 # class for choosing menus
 
 module Irc
   module Books
     class Chooser
       INFO_REGEX = '::INFO::'
-      QUIT_CMD = 'quit'
 
       def initialize(model)
         @model = model
@@ -16,8 +16,6 @@ module Irc
         @quit_block = nil
 
         @cli = HighLine.new
-
-        @search_suffix = 'epub rar'
 
         @searches = {}
         @results = {}
@@ -28,11 +26,11 @@ module Irc
       end
 
       def do_yield(text)
-        @block&.call(text)
+        @block.call(text)
       end
 
       def do_quit
-        @quit_block&.call()
+        @quit_block.call
       end
 
       def on_choice(&block)
@@ -44,12 +42,12 @@ module Irc
       end
 
       def ask_nickname
-        nick = @cli.ask 'What is your nickname?'
+        nick = @cli.ask Question.nickname
         yield(nick)
       end
 
       def choose_default_search_suffix
-        @search_suffix = @cli.ask('What would you like the search suffix to be?')
+        @model.search_suffix = @cli.ask('What would you like the search suffix to be?')
       end
 
       def choose_preferences
@@ -62,13 +60,12 @@ module Irc
             choose_default_search_bot
           end
 
-          pref_menu.choice("Change Search Suffix (#{@search_suffix})") do
+          pref_menu.choice("Change Search Suffix (#{@model.search_suffix})") do
             choose_default_search_suffix
           end
 
-          pref_menu.choice("Change Download Path (#{@download_path})") do
-            new_path = @cli.ask('What would you like the download path to be?') { |answer| answer.default = '' }
-            @model.download_path = new_path
+          pref_menu.choice("Change Download Path (#{@model.download_path})") do
+            @model.download_path = @cli.ask('What would you like the download path to be?') { |answer| answer.default = '' }
           end
 
           unless @downloaders.empty?
@@ -267,7 +264,7 @@ module Irc
         when 'm'
           main_menu
         else
-          search_phrase = "#{title} #{@search_suffix}"
+          search_phrase = "#{title} #{@model.search_suffix}"
           search = {
             phrase: search_phrase,
             bot: @model.search_bot,
