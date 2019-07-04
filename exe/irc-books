@@ -57,13 +57,10 @@ def main
     end
 
     on :join do |msg|
-      puts "join: #{msg}"
       return unless Irc::Books::MsgParser.bot_nick_msg?(bot, msg)
 
-      puts 'user bot join'
       search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
-
-      chooser.set_search_bots(search_bots)
+      model.search_bots = search_bots
 
       on_next do
         chooser.choose

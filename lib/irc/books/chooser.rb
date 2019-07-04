@@ -17,8 +17,6 @@ module Irc
 
         @cli = HighLine.new
 
-        @search_bots = []
-        @search_bot = 'searchook'
         @search_suffix = 'epub rar'
 
         @searches = {}
@@ -33,7 +31,7 @@ module Irc
         @block&.call(text)
       end
 
-      def quit
+      def do_quit
         @quit_block&.call()
       end
 
@@ -60,7 +58,7 @@ module Irc
 
           main_menu_choice(pref_menu)
 
-          pref_menu.choice("Choose Default Search Bot (#{@search_bot})") do
+          pref_menu.choice("Choose Default Search Bot (#{@model.search_bot})") do
             choose_default_search_bot
           end
 
@@ -79,6 +77,12 @@ module Irc
               choose_default_downloader
             end
           end
+        end
+      end
+
+      def main_menu_loop
+        loop do
+          main_menu
         end
       end
 
@@ -124,17 +128,8 @@ module Irc
           main_menu.default = refresh
 
           main_menu.choice('Quit') do
-            quit
+            do_quit
           end
-        end
-      end
-
-      def set_search_bots(bots)
-        @search_bots = bots
-        if @search_bot && @search_bots.include?(@search_bot)
-          nil
-        else
-          @search_bot = @search_bots.first
         end
       end
 
@@ -214,9 +209,9 @@ module Irc
         @cli.choose do |bot_menu|
           bot_menu.prompt = 'Which search bot would you like to use?'
           main_menu_choice(bot_menu)
-          @search_bots.each do |bot|
-            bot_menu.choice(bot + (bot == @search_bot ? '*' : '')) do
-              @search_bot = bot
+          @model.search_bots.each do |bot|
+            bot_menu.choice(bot + (bot == @model.search_bot ? '*' : '')) do
+              @model.search_bot = bot
             end
           end
         end
@@ -236,12 +231,16 @@ module Irc
         nil
       end
 
-      def choose
-        raise 'callbacks not initialized' unless @block && @quit_block
+      def check_initialized
+        raise 'choice callback not initialized' unless @block
+        raise 'quit callback not initialized' unless @quit_block
+        raise 'search bot not initialized' unless @model.search_bot
+      end
 
-        loop do
-          main_menu
-        end
+      def choose
+        check_initialized
+
+        main_menu_loop
       rescue StandardError => e
         puts e
         exit
@@ -271,8 +270,8 @@ module Irc
           search_phrase = "#{title} #{@search_suffix}"
           search = {
             phrase: search_phrase,
-            bot: @search_bot,
-            cmd: "@#{@search_bot} #{search_phrase}"
+            bot: @model.search_bot,
+            cmd: "@#{@model.search_bot} #{search_phrase}"
           }
           @searches[search] = false
           do_yield(search[:cmd])
