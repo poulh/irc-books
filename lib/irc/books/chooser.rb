@@ -65,7 +65,7 @@ module Irc
           end
 
           pref_menu.choice("Change Download Path (#{@model.download_path})") do
-            @model.download_path = @cli.ask('What would you like the download path to be?') { |answer| answer.default = '' }
+            @model.download_path = @cli.ask(Question.download_path)
           end
 
           unless @downloaders.empty?

@@ -13,7 +13,7 @@ module Irc
         @downloads = []
 
         @search_suffx = 'epub'
-        @download_path = '~/Downloads/ebooks'
+        self.download_path = '~/Downloads/ebooks'
       end
 
       def search_bot
