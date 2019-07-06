@@ -8,6 +8,7 @@ module Irc
   module Books
     class Chooser
       INFO_REGEX = '::INFO::'
+      SEARCH = 'SEARCH'
 
       def initialize(model)
         @model = model
@@ -243,19 +244,12 @@ module Irc
         exit
       end
 
-      def parse_private_msg(user, msg)
-        no_results = msg.index('Sorry')
-        matches = @searches.keys.select { |search| search[:bot] == user && msg.index(search[:phrase]) }
-        matches.each do |match|
-          match_phrase = match[:phrase]
-          if no_results
-            add_results(match, {})
-            puts "No Results for Search: #{match_phrase}"
-          elsif !(@searches[match])
-            @searches[match] = true
-            puts "Search in Progress: #{match_phrase}"
-          end
-        end
+      def notify_search_in_progress(search)
+        puts "Search in Progress: #{search[:phrase]}"
+      end
+
+      def notify_no_search_results(search)
+        puts "No Results for Search: #{search[:phrase]}"
       end
 
       def search
@@ -264,14 +258,7 @@ module Irc
         when 'm'
           main_menu
         else
-          search_phrase = "#{title} #{@model.search_suffix}"
-          search = {
-            phrase: search_phrase,
-            bot: @model.search_bot,
-            cmd: "@#{@model.search_bot} #{search_phrase}"
-          }
-          @searches[search] = false
-          do_yield(search[:cmd])
+          do_yield(command: SEARCH, phrase: title)
         end
       end
 

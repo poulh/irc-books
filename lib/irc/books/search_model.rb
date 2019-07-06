@@ -5,7 +5,7 @@ module Irc
     class SearchModel
       attr_accessor :search_bots, :search_suffix
       attr_accessor :active_searches, :downloads, :search_results, :nickname
-      attr_reader :download_path
+      attr_reader :download_path, :searches
       def initialize
         @search_bots = []
         @active_searches = {}
@@ -13,7 +13,8 @@ module Irc
         @downloads = []
 
         @search_suffx = 'epub'
-        self.download_path = '~/Downloads/ebooks'
+        @download_path = '~/Downloads/ebooks'
+        @searches = {}
       end
 
       def search_bot
@@ -32,6 +33,33 @@ module Irc
         return if path.empty?
 
         @download_path = File.expand_path(path)
+      end
+
+      def set_search_status(search, status)
+        searches[search] = status
+        [search, status]
+      end
+
+      def add_search(phrase)
+        search_phrase = "#{phrase} #{search_suffix}"
+        search = {
+          phrase: search_phrase,
+          bot: search_bot
+        }
+        puts search
+        set_search_status(search, true)
+      end
+
+      def update_search_status(search_status)
+        matches = @searches.keys.select do |search|
+          search_status[:bot] == search[:bot] && \
+            search_status[:phrase].index(search[:phrase])
+        end
+
+        return if matches.empty?
+
+        match = matches.first
+        set_search_status(match, search_status[:in_progress])
       end
     end
   end

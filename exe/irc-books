@@ -23,7 +23,9 @@ end
 
 def send_text_to_channel(channel, text)
   on_next do
-    Channel(channel).send(Sanitize(text))
+    sanitized = Sanitize(text)
+    puts "sending: #{sanitized}"
+    Channel(channel).send(sanitized)
   end
 end
 
@@ -39,7 +41,18 @@ def main
     end
 
     chooser.on_choice do |choice|
-      send_text_to_channel(EBOOKS, choice)
+      case choice[:command]
+      when Irc::Books::Chooser::SEARCH
+
+        search, status = model.add_search(choice[:phrase])
+
+        break unless status
+
+        cmd = "@#{search[:bot]} #{search[:phrase]}"
+        send_text_to_channel(EBOOKS, cmd)
+      else
+        puts "unknown command #{choice}"
+      end
     end
 
     chooser.ask_nickname do |nickname|
@@ -79,7 +92,13 @@ def main
     end
 
     on :private do |msg, _dcc|
-      chooser.parse_private_msg(msg.user.nick.downcase, Sanitize(msg.message))
+      search_status = Irc::Books::MsgParser.parse_search_status_msg(msg)
+      search, status = search_model.update_search_status(search_status)
+      if status
+        chooser.notify_search_in_progress(search)
+      else
+        chooser.notify_no_search_results(search)
+      end
     end
 
     on :message do |_msg|
