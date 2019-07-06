@@ -30,83 +30,83 @@ def send_text_to_channel(channel, text)
 end
 
 def main
-  bot = Cinch::Bot.new do
-    model = Irc::Books::SearchModel.new
-    chooser = Irc::Books::Chooser.new(model)
+  bot = Cinch::Bot.new
+  bot.loggers.level = :fatal
 
-    chooser.on_quit do
-      bot.quit
-      sleep(2)
-      exit
-    end
+  model = Irc::Books::SearchModel.new
+  chooser = Irc::Books::Chooser.new(model)
 
-    chooser.on_choice do |choice|
-      case choice[:command]
-      when Irc::Books::Chooser::SEARCH
+  chooser.ask_nickname do |nickname|
+    model.nickname = nickname
+  end
 
-        search, status = model.add_search(choice[:phrase])
+  bot.configure do |conf|
+    conf.server = IRC_HIGHWAY_URL
+    conf.channels = [EBOOKS]
+    conf.nick = model.nickname
+  end
 
-        break unless status
+  chooser.on_quit do
+    bot.quit
+    sleep(2)
+    exit
+  end
 
-        cmd = "@#{search[:bot]} #{search[:phrase]}"
-        send_text_to_channel(EBOOKS, cmd)
-      else
-        puts "unknown command #{choice}"
-      end
-    end
+  chooser.on_choice do |choice|
+    case choice[:command]
+    when Irc::Books::Chooser::SEARCH
 
-    chooser.ask_nickname do |nickname|
-      model.nickname = nickname
-    end
+      search, status = model.add_search(choice[:phrase])
 
-    configure do |conf|
-      conf.server = IRC_HIGHWAY_URL
-      conf.channels = [EBOOKS]
-      conf.nick = model.nickname
-    end
+      break unless status
 
-    on :connect do |_msg|
-      nil
-    end
-
-    on :join do |msg|
-      return unless Irc::Books::MsgParser.bot_nick_msg?(bot, msg)
-
-      search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
-      model.search_bots = search_bots
-
-      on_next do
-        chooser.choose
-      end
-    end
-
-    on :dcc_send do |msg, dcc|
-      user = msg.user.nick.downcase
-      begin
-        filename = dcc.filename
-        file = Tempfile.new(filename)
-        dcc.accept(file)
-        file.close
-        chooser.accept_file(user, filename, file)
-      end
-    end
-
-    on :private do |msg, _dcc|
-      search_status = Irc::Books::MsgParser.parse_search_status_msg(msg)
-      search, status = search_model.update_search_status(search_status)
-      if status
-        chooser.notify_search_in_progress(search)
-      else
-        chooser.notify_no_search_results(search)
-      end
-    end
-
-    on :message do |_msg|
-      nil
+      cmd = "@#{search[:bot]} #{search[:phrase]}"
+      send_text_to_channel(EBOOKS, cmd)
+    else
+      puts "unknown command #{choice}"
     end
   end
 
-  bot.loggers.level = :fatal
+  bot.on :connect do |_msg|
+    nil
+  end
+
+  bot.on :join do |msg|
+    return unless Irc::Books::MsgParser.bot_nick_msg?(bot, msg)
+
+    search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
+    model.search_bots = search_bots
+
+    on_next do
+      chooser.choose
+    end
+  end
+
+  bot.on :dcc_send do |msg, dcc|
+    user = msg.user.nick.downcase
+    begin
+      filename = dcc.filename
+      file = Tempfile.new(filename)
+      dcc.accept(file)
+      file.close
+      chooser.accept_file(user, filename, file)
+    end
+  end
+
+  bot.on :private do |msg, _dcc|
+    search_status = Irc::Books::MsgParser.parse_search_status_msg(msg)
+    search, status = search_model.update_search_status(search_status)
+    if status
+      chooser.notify_search_in_progress(search)
+    else
+      chooser.notify_no_search_results(search)
+    end
+  end
+
+  bot.on :message do |_msg|
+    nil
+  end
+
   bot.start
 end
 
