@@ -10,11 +10,12 @@ module Irc
       INFO_REGEX = '::INFO::'
       SEARCH = 'SEARCH'
 
+      EVENTS = %i[choice quit].freeze
+
       def initialize(model)
         @model = model
 
-        @block = nil
-        @quit_block = nil
+        @callbacks = {}
 
         @cli = HighLine.new
 
@@ -26,20 +27,18 @@ module Irc
         @preferred_downloader = nil
       end
 
-      def do_yield(text)
-        @block.call(text)
+      def yield_choice(text)
+        @callbacks[:choice].call(text)
       end
 
       def do_quit
-        @quit_block.call
+        @callbacks[:quit].call
       end
 
-      def on_choice(&block)
-        @block = block
-      end
+      def on(event, &block)
+        raise "invalid chooser event #{event}" unless EVENTS.include?(event)
 
-      def on_quit(&block)
-        @quit_block = block
+        @callbacks[event] = block
       end
 
       def ask_nickname
@@ -175,7 +174,7 @@ module Irc
 
               the_choice = [downloader, title].join(' ')
               book_menu.choice(the_choice) do
-                do_yield(the_choice)
+                yield_choice(the_choice)
                 if downloader != @preferred_downloader
                   answer = @cli.ask("Make #{downloader} your preferred downloader? (y/n)")
                   @preferred_downloader = downloader if answer.downcase[0] == 'y'
@@ -230,9 +229,9 @@ module Irc
       end
 
       def check_initialized
-        raise 'choice callback not initialized' unless @block
-        raise 'quit callback not initialized' unless @quit_block
-        raise 'search bot not initialized' unless @model.search_bot
+        EVENTS.each do |event|
+          raise "#{event} callback not initialized" unless @callbacks[event]
+        end
       end
 
       def choose
@@ -258,7 +257,7 @@ module Irc
         when 'm'
           main_menu
         else
-          do_yield(command: SEARCH, phrase: title)
+          yield_choice(command: SEARCH, phrase: title)
         end
       end
 

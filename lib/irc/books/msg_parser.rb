@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'cinch/helpers'
+
 # class for choosing menus
 
 module Irc
@@ -7,6 +9,9 @@ module Irc
     # parse incoming irc msgs for meaningful values
     module MsgParser
       def self.bot_nick_msg?(bot, msg)
+        return false unless bot.nick
+        return false unless msg.user
+
         bot.nick.downcase == msg.user.nick.downcase
       end
 
@@ -24,7 +29,7 @@ module Irc
       def self.parse_search_status_msg(msg)
         bot = msg.user.nick.downcase
 
-        sanitized = Sanitize(msg.message)
+        sanitized = Cinch::Sanitize(msg.message)
         search_in_progress = !sanitized.index(NO_RESULTS_REGEX)
 
         { bot: bot, phrase: sanitized, in_progress: search_in_progress }

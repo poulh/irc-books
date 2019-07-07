@@ -46,7 +46,6 @@ module Irc
           phrase: search_phrase,
           bot: search_bot
         }
-        puts search
         set_search_status(search, true)
       end
 
