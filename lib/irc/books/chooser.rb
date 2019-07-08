@@ -19,7 +19,6 @@ module Irc
 
         @cli = HighLine.new
 
-        @searches = {}
         @results = {}
         @downloads = []
 
@@ -91,9 +90,9 @@ module Irc
             search
           end
 
-          unless @searches.empty?
-            main_menu.choice("Active Searches (#{@searches.size})") do
-              @searches.each do |search, accepted|
+          unless @model.searches.empty?
+            main_menu.choice("Active Searches (#{@model.searches.size})") do
+              @model.searches.each do |search, accepted|
                 state = accepted ? 'x' : '?'
                 puts "#{search[:bot]} #{state} - #{search[:phrase]}"
               end
@@ -215,7 +214,7 @@ module Irc
       end
 
       def add_results(search, results)
-        @searches.delete(search)
+        @model.searches.delete(search)
         @results[search] = results
         results.each do |_title, downloaders|
           downloaders.each do |downloader|
@@ -251,6 +250,10 @@ module Irc
         puts "No Results for Search: #{search[:phrase]}"
       end
 
+      def notify_error_in_search_result(search)
+        puts "Unknown search result: #{search[:phrase]}"
+      end
+
       def search
         title = @cli.ask('What books would you like to search for? (type M to return to Main Menu)')
         case title.downcase
@@ -262,7 +265,7 @@ module Irc
       end
 
       def accept_file(user, filename, file)
-        matches = @searches.keys.select { |search| search[:bot] == user && filename.index(search[:phrase].tr(' ', '_')) }
+        matches = @model.searches.keys.select { |search| search[:bot] == user && filename.index(search[:phrase].tr(' ', '_')) }
 
         file_path = file.path
         if matches.empty?

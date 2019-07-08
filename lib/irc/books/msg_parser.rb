@@ -9,13 +9,15 @@ module Irc
     # parse incoming irc msgs for meaningful values
     module MsgParser
       def self.bot_nick_msg?(bot, msg)
-        return false unless bot.nick
-        return false unless msg.user
+        msg_user = msg.user
+        bot_nick = bot.nick
+        return false unless bot_nick
+        return false unless msg_user
 
-        bot.nick.downcase == msg.user.nick.downcase
+        bot_nick.downcase == msg_user.nick.downcase
       end
 
-      SEARCH_BOT_REGEX = '@.*'
+      SEARCH_BOT_REGEX = '@.*[Ss]earch.*'
       BOT_NAME_PREFIX = '@'
       def self.parse_search_bots_from_topic(msg)
         words = msg.channel.topic.strip.split
@@ -29,10 +31,10 @@ module Irc
       def self.parse_search_status_msg(msg)
         bot = msg.user.nick.downcase
 
-        sanitized = Cinch::Sanitize(msg.message)
-        search_in_progress = !sanitized.index(NO_RESULTS_REGEX)
+        sanitized = Cinch::Helpers.sanitize(msg.message)
+        status = sanitized.index(NO_RESULTS_REGEX) ? :no_results : :in_progress
 
-        { bot: bot, phrase: sanitized, in_progress: search_in_progress }
+        [{ bot: bot, phrase: sanitized }, status]
       end
     end
   end

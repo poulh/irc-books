@@ -26,11 +26,13 @@ module Irc
 
       def initialize
         @bot = Cinch::Bot.new
-        @bot.loggers.level = :fatal # :error
+        @bot.loggers.level = :info # :error # :fatal # :error
 
         @model = Irc::Books::SearchModel.new
         @chooser = Irc::Books::Chooser.new(@model)
       end
+
+      attr_reader :bot
 
       def init_chooser_on_quit
         @chooser.on :quit do
@@ -46,8 +48,9 @@ module Irc
           when Irc::Books::Chooser::SEARCH
 
             search, status = @model.add_search(choice[:phrase])
-
-            next unless status
+            puts search
+            puts status
+            next if status == :error
 
             cmd = "@#{search[:bot]} #{search[:phrase]}"
             send_text_to_channel(EBOOKS, cmd)
@@ -67,28 +70,41 @@ module Irc
       end
 
       def init_bot_on_accept_search_results_file
-        @bot.on :dcc_send, //, self do |msg, dcc, _ctxt|
+        @bot.on :dcc_send, //, self do |msg, ctxt, dcc|
+          puts "msg: #{msg.class}"
+          puts "dcc: #{dcc.class}"
+          puts "ctxt: #{ctxt.class}"
+
           user = msg.user.nick.downcase
           begin
             filename = dcc.filename
             file = Tempfile.new(filename)
             dcc.accept(file)
             file.close
-            @chooser.accept_file(user, filename, file)
+            ctxt.chooser.accept_file(user, filename, file)
           end
         end
       end
 
       def init_bot_on_search_acknowledged
-        @bot.on :private, //, self do |msg, _dcc, _ctxt|
-          next unless Irc::Books::MsgParser.bot_nick_msg?(@bot, msg)
+        @bot.on :private, //, @model, @chooser do |msg, model, chooser|
+          user = msg.user
 
-          search_status = Irc::Books::MsgParser.parse_search_status_msg(msg)
-          search, status = search_model.update_search_status(search_status)
-          if status
-            @chooser.notify_search_in_progress(search)
+          next unless user && (model.search_bot.downcase == user.nick.downcase)
+
+          search, status = Irc::Books::MsgParser.parse_search_status_msg(msg)
+
+          search, status = model.set_search_status(search, status)
+          puts "search's status: #{search} #{status}"
+
+          case status
+          when :in_progress
+            chooser.notify_search_in_progress(search)
+          when :no_results
+            chooser.notify_no_search_results(search)
           else
-            @chooser.notify_no_search_results(search)
+            puts msg
+            chooser.notify_error_in_search_result(search)
           end
         end
       end
@@ -108,9 +124,9 @@ module Irc
 
         init_bot_on_accept_search_results_file
 
-        # @bot.on :message do |_msg|
-        #   nil
-        # end
+        @bot.on :message do |msg|
+          # puts "msg: #{msg}"
+        end
       end
 
       def on_next

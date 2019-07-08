@@ -12,7 +12,7 @@ module Irc
         @search_results = {}
         @downloads = []
 
-        @search_suffx = 'epub'
+        @search_suffix = 'epub'
         @download_path = '~/Downloads/ebooks'
         @searches = {}
       end
@@ -35,10 +35,10 @@ module Irc
         @download_path = File.expand_path(path)
       end
 
-      def set_search_status(search, status)
-        searches[search] = status
-        [search, status]
-      end
+      # def set_search_status(search, status)
+      #   searches[search] = status
+      #   [search, status]
+      # end
 
       def add_search(phrase)
         search_phrase = "#{phrase} #{search_suffix}"
@@ -46,19 +46,22 @@ module Irc
           phrase: search_phrase,
           bot: search_bot
         }
-        set_search_status(search, true)
+        searches[search] = :in_transit
+        [search, :in_transit]
       end
 
-      def update_search_status(search_status)
-        matches = @searches.keys.select do |search|
-          search_status[:bot] == search[:bot] && \
-            search_status[:phrase].index(search[:phrase])
+      def set_search_status(search, status)
+        matches = searches.keys.select do |key|
+          key[:bot] == search[:bot] && \
+            search[:phrase].index(key[:phrase])
         end
 
-        return if matches.empty?
+        return [search, :error] if matches.empty?
 
         match = matches.first
-        set_search_status(match, search_status[:in_progress])
+
+        searches[match] = status
+        [match, status]
       end
     end
   end
