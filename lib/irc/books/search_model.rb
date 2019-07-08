@@ -13,7 +13,7 @@ module Irc
         @downloads = []
 
         @search_suffix = 'epub'
-        @download_path = '~/Downloads/ebooks'
+        self.download_path = '~/Downloads/ebooks'
         @searches = {}
       end
 
@@ -33,6 +33,7 @@ module Irc
         return if path.empty?
 
         @download_path = File.expand_path(path)
+        puts @download_path
       end
 
       # def set_search_status(search, status)

@@ -6,9 +6,12 @@ require 'irc/books/questions'
 
 module Irc
   module Books
+    # cli interface for searching and downloading ebooks
     class Chooser
       INFO_REGEX = '::INFO::'
-      SEARCH = 'SEARCH'
+
+      SEARCH = :search
+      DOWNLOAD = :download
 
       EVENTS = %i[choice quit].freeze
 
@@ -20,7 +23,6 @@ module Irc
         @cli = HighLine.new
 
         @results = {}
-        @downloads = []
 
         @downloaders = {}
         @preferred_downloader = nil
@@ -105,9 +107,9 @@ module Irc
             end
           end
 
-          unless @downloads.empty?
-            main_menu.choice("View Downloads (#{@downloads.size})") do
-              puts @downloads.join("\n")
+          unless @model.downloads.empty?
+            main_menu.choice("View Downloads (#{@model.downloads.size})") do
+              puts @model.downloads.join("\n")
             end
           end
 
@@ -173,7 +175,7 @@ module Irc
 
               the_choice = [downloader, title].join(' ')
               book_menu.choice(the_choice) do
-                yield_choice(the_choice)
+                yield_choice(command: DOWNLOAD, phrase: the_choice)
                 if downloader != @preferred_downloader
                   answer = @cli.ask("Make #{downloader} your preferred downloader? (y/n)")
                   @preferred_downloader = downloader if answer.downcase[0] == 'y'
@@ -270,8 +272,8 @@ module Irc
         file_path = file.path
         if matches.empty?
           new_path = File.join(@model.download_path, filename)
-          FileUtils.mv(file_path, new_path, verbose: false)
-          @downloads << new_path
+          FileUtils.mv(file_path, new_path, verbose: true)
+          @model.downloads << new_path
           puts "New Download: #{new_path}"
           return
         end

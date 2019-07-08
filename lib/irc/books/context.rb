@@ -44,16 +44,19 @@ module Irc
 
       def init_chooser_on_choice
         @chooser.on :choice do |choice|
+          phrase = choice[:phrase]
           case choice[:command]
           when Irc::Books::Chooser::SEARCH
 
-            search, status = @model.add_search(choice[:phrase])
+            search, status = @model.add_search(phrase)
             puts search
             puts status
             next if status == :error
 
             cmd = "@#{search[:bot]} #{search[:phrase]}"
             send_text_to_channel(EBOOKS, cmd)
+          when Irc::Books::Chooser::DOWNLOAD
+            send_text_to_channel(EBOOKS, phrase)
           else
             puts "unknown command #{choice}"
           end
