@@ -33,7 +33,6 @@ module Irc
         return if path.empty?
 
         @download_path = File.expand_path(path)
-        puts @download_path
       end
 
       # def set_search_status(search, status)
