@@ -7,14 +7,13 @@ require 'irc/books/chooser'
 require 'irc/books/msg_parser'
 require 'irc/books/search_model'
 
-# main class of application
-
 module Irc
   module Books
+    # main class of application
     class Context
+      attr_accessor :model
       include Cinch::Helpers
 
-      attr_accessor :model, :chooser
       EBOOKS = '#ebooks'
       IRC_HIGHWAY_URL = 'irc.irchighway.net'
 
@@ -37,8 +36,7 @@ module Irc
       def init_chooser_on_quit
         @chooser.on :quit do
           @bot.quit
-          sleep(2)
-          exit
+          sleep(10)
         end
       end
 
@@ -49,11 +47,9 @@ module Irc
           when Irc::Books::Chooser::SEARCH
 
             search, status = @model.add_search(phrase)
-            puts search
-            puts status
             next if status == :error
 
-            cmd = "@#{search[:bot]} #{search[:phrase]}"
+            cmd = "@#{search[:search_bot]} #{search[:phrase]}"
             send_text_to_channel(EBOOKS, cmd)
           when Irc::Books::Chooser::DOWNLOAD
             send_text_to_channel(EBOOKS, phrase)
@@ -63,52 +59,54 @@ module Irc
         end
       end
 
-      def init_bot_on_join
+      def init_parse_search_bots_on_join
         @bot.on :join, //, self do |msg, ctxt|
           next unless Irc::Books::MsgParser.bot_nick_msg?(@bot, msg)
 
           ctxt.model.search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
+
           ctxt.main_menu
         end
       end
 
-      def init_bot_on_accept_search_results_file
+      def init_on_accept_search_result_file_from_search_bot
         @bot.on :dcc_send, //, self do |msg, ctxt, dcc|
-          puts "msg: #{msg.class}"
-          puts "dcc: #{dcc.class}"
-          puts "ctxt: #{ctxt.class}"
+          sender, filename, file = Irc::Books::MsgParser.parse_user_and_accept_file(msg, dcc)
+          search = ctxt.model.select_search(sender, phrase: filename)
 
-          user = msg.user.nick.downcase
-          begin
-            filename = dcc.filename
-            file = Tempfile.new(filename)
-            dcc.accept(file)
-            file.close
-            ctxt.chooser.accept_file(user, filename, file)
+          if search
+            new_path = File.join(ctxt.model.download_path, filename)
+            FileUtils.mv(file.path, new_path, verbose: true)
+            ctxt.model.downloads << new_path
+            puts "New Download: #{new_path}"
+          else
+            ctxt.chooser.accept_file(sender, filename, file)
           end
         end
       end
 
-      def init_bot_on_search_acknowledged
+      def notify_search_status(search)
+        case search[:status]
+        when :in_progress
+          chooser.notify_search_in_progress(search)
+        when :no_results
+          chooser.notify_no_search_results_found(search)
+        end
+      end
+
+      def init_on_search_acknowledged_from_search_bot
         @bot.on :private, //, @model, @chooser do |msg, model, chooser|
-          user = msg.user
+          search_bot, search = Irc::Books::MsgParser.parse_search_status_msg(msg)
+          next unless search_bot
 
-          next unless user && (model.search_bot.downcase == user.nick.downcase)
-
-          search, status = Irc::Books::MsgParser.parse_search_status_msg(msg)
-
-          search, status = model.set_search_status(search, status)
-          puts "search's status: #{search} #{status}"
-
-          case status
-          when :in_progress
-            chooser.notify_search_in_progress(search)
-          when :no_results
-            chooser.notify_no_search_results(search)
-          else
-            puts msg
-            chooser.notify_error_in_search_result(search)
-          end
+          # begin
+          existing_search = model.select_search(search_bot, search)
+          existing_search[:status] = search[:status]
+          updated_search = model.update_existing_search(existing_search)
+          chooser.notify_search_results_found(updated_search)
+          # rescue KeyError
+          # chooser.notify_error_in_search_result(search)
+          # end
         end
       end
 
@@ -117,15 +115,9 @@ module Irc
 
         init_chooser_on_choice
 
-        # @bot.on :connect do |_msg|
-        #   nil
-        # end
-
-        init_bot_on_join
-
-        init_bot_on_search_acknowledged
-
-        init_bot_on_accept_search_results_file
+        init_parse_search_bots_on_join
+        init_on_search_acknowledged_from_search_bot
+        init_on_accept_search_result_file_from_search_bot
 
         @bot.on :message do |msg|
           # puts "msg: #{msg}"

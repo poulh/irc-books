@@ -29,12 +29,24 @@ module Irc
 
       NO_RESULTS_REGEX = 'Sorry'
       def self.parse_search_status_msg(msg)
-        bot = msg.user.nick.downcase
+        msg_user = msg.user
+        return [nil, {}] unless msg_user
+
+        bot = msg_user.nick.downcase
 
         sanitized = Cinch::Helpers.sanitize(msg.message)
         status = sanitized.index(NO_RESULTS_REGEX) ? :no_results : :in_progress
 
-        [{ bot: bot, phrase: sanitized }, status]
+        [bot, { search_bot: bot, phrase: sanitized, status: status }]
+      end
+
+      def self.parse_user_and_accept_file(msg, dcc)
+        sender = msg.user.nick.downcase
+        filename = dcc.filename
+        file = Tempfile.new(filename)
+        dcc.accept(file)
+        file.close
+        [sender, filename, file]
       end
     end
   end

@@ -28,8 +28,8 @@ module Irc
         @preferred_downloader = nil
       end
 
-      def yield_choice(text)
-        @callbacks[:choice].call(text)
+      def yield_choice(choice)
+        @callbacks[:choice].call(choice)
       end
 
       def do_quit
@@ -94,9 +94,10 @@ module Irc
 
           unless @model.searches.empty?
             main_menu.choice("Active Searches (#{@model.searches.size})") do
-              @model.searches.each do |search, accepted|
-                state = accepted ? 'x' : '?'
-                puts "#{search[:bot]} #{state} - #{search[:phrase]}"
+              @model.searches.each do |_search_bot, bot_searches|
+                bot_searches.each do |_cleaned_search, search|
+                  puts "#{search[:search_bot]} #{search[:status]} - #{search[:phrase]}"
+                end
               end
             end
           end
@@ -239,21 +240,22 @@ module Irc
         check_initialized
 
         main_menu_loop
-      rescue StandardError => e
-        puts e
-        exit
       end
 
       def notify_search_in_progress(search)
         puts "Search in Progress: #{search[:phrase]}"
       end
 
-      def notify_no_search_results(search)
-        puts "No Results for Search: #{search[:phrase]}"
+      def notify_no_search_results_found(search)
+        puts "No Search Results Found for: #{search[:phrase]}"
       end
 
       def notify_error_in_search_result(search)
         puts "Unknown search result: #{search[:phrase]}"
+      end
+
+      def notify_search_results_found(search)
+        puts "New Search Results Found for: #{search[:phrase]}"
       end
 
       def search
@@ -267,7 +269,7 @@ module Irc
       end
 
       def accept_file(user, filename, file)
-        matches = @model.searches.keys.select { |search| search[:bot] == user && filename.index(search[:phrase].tr(' ', '_')) }
+        matches = @model.searches.keys.select { |search| search[:search_bot] == user && filename.index(search[:phrase].tr(' ', '_')) }
 
         file_path = file.path
         if matches.empty?
@@ -299,8 +301,6 @@ module Irc
               puts "New Search Results: #{match[:phrase]}"
             end
           end
-        rescue StandardError => e
-          puts "error: #{e}"
         ensure
           file.unlink
         end

@@ -39,29 +39,48 @@ module Irc
       #   searches[search] = status
       #   [search, status]
       # end
-
-      def add_search(phrase)
-        search_phrase = "#{phrase} #{search_suffix}"
-        search = {
-          phrase: search_phrase,
-          bot: search_bot
-        }
-        searches[search] = :in_transit
-        [search, :in_transit]
+      def search_phrase(phrase)
+        "#{phrase} #{search_suffix}"
       end
 
-      def set_search_status(search, status)
-        matches = searches.keys.select do |key|
-          key[:bot] == search[:bot] && \
-            search[:phrase].index(key[:phrase])
+      def self.clean_search_phrase(search_phrase)
+        search_phrase.tr(' ', '_')
+      end
+
+      def add_search(phrase)
+        search_phrase = search_phrase(phrase)
+
+        search = {
+          phrase: search_phrase,
+          search_bot: search_bot,
+          status: :in_transit
+        }
+
+        bot_searches = @searches.fetch(search_bot) do |search_bot|
+          @searches[search_bot] = {}
         end
 
-        return [search, :error] if matches.empty?
+        bot_searches[SearchModel.clean_search_phrase(search_phrase)] = search
+      end
 
-        match = matches.first
+      def select_search(search_bot, search)
+        clean_search_phrase = SearchModel.clean_search_phrase(search[:phrase])
 
-        searches[match] = status
-        [match, status]
+        bot_searches = @searches.fetch(search_bot)
+
+        selected = bot_searches.select do |cleaned_search, bot_search|
+          return bot_search if clean_search_phrase.index(cleaned_search)
+        end
+        raise KeyError if selected.empty?
+
+        selected.first
+      end
+
+      def update_existing_search(search)
+        bot_searches = @searches.fetch(search[:search_bot])
+        cleaned_search = SearchModel.clean_search_phrase(search[:phrase])
+        bot_searches.fetch(cleaned_search) # raise KeyError if not there
+        bot_searches[cleaned_search] = search
       end
     end
   end
