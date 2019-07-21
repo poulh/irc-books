@@ -7,8 +7,26 @@ require 'shellwords'
 require 'tempfile'
 require 'fileutils'
 require 'irc/books/context'
+require 'optparse'
+
+LEVELS = %i[debug info error fatal].freeze
+
 def main
-  context = Irc::Books::Context.new
+  options = {}
+  opts = OptionParser.new
+  opts.banner = 'Usage: irc-books [options]'
+
+  opts.on('-n', '--nickname n', 'Nickname') do |nickname|
+    options[:nickname] = nickname
+  end
+
+  opts.on('-l', '--log-level l', "Log Level [#{LEVELS.join(', ')}]") do |level|
+    options[:log_level] = level.downcase.to_sym
+  end
+
+  opts.parse!
+
+  context = Irc::Books::Context.new(options)
 
   context.start
 end

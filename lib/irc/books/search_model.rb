@@ -6,7 +6,8 @@ module Irc
       attr_accessor :search_bots, :search_suffix
       attr_accessor :active_searches, :downloads, :search_results, :nickname
       attr_reader :download_path, :searches
-      def initialize
+      def initialize(options)
+        @nickname = options[:nickname]
         @search_bots = []
         @active_searches = {}
         @search_results = {}

@@ -23,11 +23,11 @@ module Irc
         end
       end
 
-      def initialize
+      def initialize(options)
         @bot = Cinch::Bot.new
-        @bot.loggers.level = :info # :error # :fatal # :error
+        @bot.loggers.level = options[:log_level]
 
-        @model = Irc::Books::SearchModel.new
+        @model = Irc::Books::SearchModel.new(options)
         @chooser = Irc::Books::Chooser.new(@model)
       end
 
@@ -137,18 +137,26 @@ module Irc
         end
       end
 
-      def start
-        setup_callbacks
-
+      def ask_nickname
         @chooser.ask_nickname do |nickname|
           @model.nickname = nickname
         end
+      end
 
+      def configure_bot
         @bot.configure do |conf|
-          conf.server = IRC_HIGHWAY_URL
-          conf.channels = [EBOOKS]
+          conf.server = Context::IRC_HIGHWAY_URL
+          conf.channels = [Context::EBOOKS]
           conf.nick = @model.nickname
         end
+      end
+
+      def start
+        setup_callbacks
+
+        ask_nickname unless @model.nickname
+
+        configure_bot
 
         @bot.start
       end
