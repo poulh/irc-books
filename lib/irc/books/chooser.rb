@@ -236,6 +236,10 @@ module Irc
         end
       end
 
+      def beep
+        puts "\a"
+      end
+
       def choose
         check_initialized
 
@@ -259,9 +263,9 @@ module Irc
       end
 
       def search
-        title = @cli.ask('What books would you like to search for? (type M to return to Main Menu)')
+        title = @cli.ask('What books would you like to search for? (Press <Return> for Main Menu)')
         case title.downcase
-        when 'm'
+        when ''
           main_menu
         else
           yield_choice(command: SEARCH, phrase: title)

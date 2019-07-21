@@ -11,14 +11,17 @@ module Irc
   module Books
     # main class of application
     class Context
-      attr_accessor :model
+      attr_accessor :model, :chooser
       include Cinch::Helpers
 
       EBOOKS = '#ebooks'
       IRC_HIGHWAY_URL = 'irc.irchighway.net'
 
       def main_menu
-        on_next do
+        wait_time = 30
+        puts "mandatory #{wait_time} second wait"
+        on_next(wait_time) do
+          @chooser.beep
           @chooser.choose
         end
       end
@@ -47,6 +50,7 @@ module Irc
           when Irc::Books::Chooser::SEARCH
 
             search, status = @model.add_search(phrase)
+            init_on_search(search)
             next if status == :error
 
             cmd = "@#{search[:search_bot]} #{search[:phrase]}"
@@ -69,22 +73,6 @@ module Irc
         end
       end
 
-      def init_on_accept_search_result_file_from_search_bot
-        @bot.on :dcc_send, //, self do |msg, ctxt, dcc|
-          sender, filename, file = Irc::Books::MsgParser.parse_user_and_accept_file(msg, dcc)
-          search = ctxt.model.select_search(sender, phrase: filename)
-
-          if search
-            new_path = File.join(ctxt.model.download_path, filename)
-            FileUtils.mv(file.path, new_path, verbose: true)
-            ctxt.model.downloads << new_path
-            puts "New Download: #{new_path}"
-          else
-            ctxt.chooser.accept_file(sender, filename, file)
-          end
-        end
-      end
-
       def notify_search_status(search)
         case search[:status]
         when :in_progress
@@ -94,19 +82,65 @@ module Irc
         end
       end
 
-      def init_on_search_acknowledged_from_search_bot
-        @bot.on :private, //, @model, @chooser do |msg, model, chooser|
-          search_bot, search = Irc::Books::MsgParser.parse_search_status_msg(msg)
-          next unless search_bot
+      def init_on_search(search)
+        init_on_search_accepted(search)
+      end
 
-          # begin
-          existing_search = model.select_search(search_bot, search)
-          existing_search[:status] = search[:status]
-          updated_search = model.update_existing_search(existing_search)
-          chooser.notify_search_results_found(updated_search)
-          # rescue KeyError
-          # chooser.notify_error_in_search_result(search)
-          # end
+      def init_on_search_accepted(search)
+        regex_accepted = '^.*%{phrase}.*accepted.*$' % search
+        @bot.loggers.info "registering: #{regex_accepted}"
+        handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
+          context.init_on_search_results_found(search)
+          context.chooser.notify_search_in_progress(search)
+          context.bot.handlers.unregister(handler)
+        end
+      end
+
+      def init_on_search_results_found(search)
+        regex_results_found = '^.*%{phrase}.*returned \d+ match.*$' % search
+        @bot.loggers.info "registering: #{regex_results_found}"
+        # Your search for "12,9Tom Clancy epub1,9" returned 1000 match
+
+        handler = @bot.on :private, /#{regex_results_found}/, self do |_msg, context|
+          context.init_on_search_results_file_download(search)
+          context.init_on_search_results_filename(search)
+          context.bot.handlers.unregister(handler)
+        end
+      end
+
+      def init_on_search_results_filename(search)
+        puts search
+        # two spaces on purpose after 'results for'
+        regex_results_filename = '^.*results for  %{phrase}.*$' % search
+        regex_results_filename.tr!(' ', '_')
+
+        @bot.loggers.info "registering: #{regex_results_filename}"
+
+        handler = @bot.on :private, /#{regex_results_filename}/, self do |_msg, context|
+          context.chooser.beep
+          context.bot.handlers.unregister(handler)
+        end
+      end
+
+      def init_on_search_results_file_download(search)
+        puts search
+        # two spaces on purpose after 'results for'
+        regex_results_file_download = '^.*results for  %{phrase}.*$' % search
+        regex_results_file_download.tr!(' ', '_')
+
+        @bot.loggers.info "registering: #{regex_results_file_download}"
+
+        handler = @bot.on :dcc_send, /#{regex_results_file_download}/, self do |msg, context, dcc|
+          _sender, filename, file = Irc::Books::MsgParser.parse_user_and_accept_file(msg, dcc)
+          # search = ctxt.model.select_search(sender, phrase: filename)
+
+          # if search
+          new_path = File.join(context.model.download_path, filename)
+          FileUtils.mv(file.path, new_path, verbose: true)
+          context.model.downloads << new_path
+          puts "New Download: #{new_path}"
+
+          context.bot.handlers.unregister(handler)
         end
       end
 
@@ -116,16 +150,14 @@ module Irc
         init_chooser_on_choice
 
         init_parse_search_bots_on_join
-        init_on_search_acknowledged_from_search_bot
-        init_on_accept_search_result_file_from_search_bot
 
         @bot.on :message do |msg|
           # puts "msg: #{msg}"
         end
       end
 
-      def on_next
-        @bot.Timer(1, shots: 1) do
+      def on_next(wait = 1)
+        @bot.Timer(wait, shots: 1) do
           yield
         end
       end
