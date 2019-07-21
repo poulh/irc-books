@@ -4,7 +4,7 @@ module Irc
   module Books
     class SearchModel
       attr_accessor :search_bots, :search_suffix
-      attr_accessor :active_searches, :downloads, :search_results, :nickname
+      attr_accessor :active_searches, :downloads, :search_results, :nickname, :downloaders
       attr_reader :download_path, :searches
       def initialize(options)
         @nickname = options[:nickname]

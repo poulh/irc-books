@@ -22,8 +22,6 @@ module Irc
 
         @cli = HighLine.new
 
-        @results = {}
-
         @downloaders = {}
         @preferred_downloader = nil
       end
@@ -102,8 +100,8 @@ module Irc
             end
           end
 
-          unless @results.empty?
-            main_menu.choice("Search Results (#{@results.size})") do
+          unless @model.search_results.empty?
+            main_menu.choice("Search Results (#{@model.search_results.size})") do
               choose_results
             end
           end
@@ -155,9 +153,9 @@ module Irc
       end
 
       def choose_books(search, preferred_downloader)
-        return unless @results.key?(search)
+        return unless @model.search_results.key?(search)
 
-        books = @results[search]
+        books = @model.search_results[search]
         @cli.choose do |book_menu|
           book_menu.prompt = 'Which book would you like to download?'
 
@@ -195,7 +193,7 @@ module Irc
 
           main_menu_choice(results_menu)
 
-          @results.each do |search, results|
+          @model.search_results.each do |search, results|
             results_menu.choice("#{search[:phrase]} (#{results.keys.size})") do
               choose_default_downloader unless @preferred_downloader
               choose_books(search, @preferred_downloader)
@@ -218,7 +216,7 @@ module Irc
 
       def add_results(search, results)
         @model.searches.delete(search)
-        @results[search] = results
+        @model.search_results[search] = results
         results.each do |_title, downloaders|
           downloaders.each do |downloader|
             @downloaders[downloader] = true

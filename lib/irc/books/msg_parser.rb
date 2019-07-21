@@ -49,12 +49,11 @@ module Irc
         file
       end
 
-      def self.parse_user_and_accept_file(msg, dcc)
-        sender = MsgParser.msg_user(msg)
+      def self.parse_and_accept_file(dcc)
         filename = dcc.filename
         file = MsgParser.accept_file(filename, dcc)
 
-        [sender, filename, file]
+        [filename, file]
       end
     end
   end

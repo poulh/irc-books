@@ -116,8 +116,8 @@ module Irc
 
         @bot.loggers.info "registering: #{regex_results_filename}"
 
-        handler = @bot.on :private, /#{regex_results_filename}/, self do |_msg, context|
-          context.chooser.beep
+        handler = @bot.on :private, /#{regex_results_filename}/, self do |msg, context|
+          puts msg.message.split(' ').join('|')
           context.bot.handlers.unregister(handler)
         end
       end
@@ -130,18 +130,42 @@ module Irc
 
         @bot.loggers.info "registering: #{regex_results_file_download}"
 
-        handler = @bot.on :dcc_send, /#{regex_results_file_download}/, self do |msg, context, dcc|
-          _sender, filename, file = Irc::Books::MsgParser.parse_user_and_accept_file(msg, dcc)
-          # search = ctxt.model.select_search(sender, phrase: filename)
+        handler = @bot.on :dcc_send, /#{regex_results_file_download}/, self do |_msg, context, dcc|
+          filename, file = Irc::Books::MsgParser.parse_and_accept_file(dcc)
+          puts "#{filename} downloaded: #{file.path}"
 
-          # if search
-          new_path = File.join(context.model.download_path, filename)
-          FileUtils.mv(file.path, new_path, verbose: true)
-          context.model.downloads << new_path
-          puts "New Download: #{new_path}"
+          context.on_next do
+            books = context.parse_search_results(file)
+            context.model.search_results[search] = books
+            context.chooser.beep
+          end
 
           context.bot.handlers.unregister(handler)
         end
+      end
+
+      def parse_search_results(file)
+        zipfile = Zip::File.open(file.path)
+
+        zipfile.entries.each do |entry|
+          books = {}
+          results = zipfile.read(entry.name).split(/[\r\n]+/)
+          results.each do |result|
+            next unless result =~ /^!.*/
+
+            info_regex = '::INFO::'
+            next unless result =~ /#{info_regex}/
+
+            result = result[0, result.index(info_regex)].strip
+            owner, title = result.split(' ', 2)
+            books[title] = [] unless books.key?(title)
+            books[title] << owner
+          end
+
+          return books
+        end
+      ensure
+        file.unlink
       end
 
       def setup_callbacks
