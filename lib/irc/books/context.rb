@@ -48,15 +48,17 @@ module Irc
           phrase = choice[:phrase]
           case choice[:command]
           when Irc::Books::Chooser::SEARCH
-
             search, status = @model.add_search(phrase)
-            init_on_search(search)
+
             next if status == :error
 
             cmd = "@#{search[:search_bot]} #{search[:phrase]}"
             send_text_to_channel(EBOOKS, cmd)
+            init_on_search(search)
+
           when Irc::Books::Chooser::DOWNLOAD
             send_text_to_channel(EBOOKS, phrase)
+            init_on_download_book(choice)
           else
             puts "unknown command #{choice}"
           end
@@ -80,6 +82,44 @@ module Irc
         when :no_results
           chooser.notify_no_search_results_found(search)
         end
+      end
+
+      def init_on_download_book(command)
+        init_on_download_book_accepted(command)
+      end
+
+      def init_on_download_book_accepted(command)
+        phrase = Regexp.escape(command[:title])
+        regex_accepted = "^.*accepted.*#{phrase}.*$"
+
+        handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
+          puts "Download Accepted: #{command[:title]}"
+          context.init_on_download_book_file(command)
+
+          context.bot.handlers.unregister(handler)
+        end
+        puts "registering: #{handler}"
+      end
+
+      def init_on_download_book_file(command)
+        phrase = Regexp.escape(command[:title])
+        regex_book_file = "^.*#{phrase}.*$"
+
+        handler = @bot.on :dcc_send, /#{regex_book_file}/i, self do |_msg, context, dcc|
+          filename, file = Irc::Books::MsgParser.parse_and_accept_file(dcc)
+
+          context.on_next do
+            context_model = context.model
+            new_path = File.join(context_model.download_path, filename)
+            FileUtils.mv(file.path, new_path, verbose: true)
+            context_model.downloads << new_path
+            puts "New Download: #{new_path}"
+
+            context.chooser.beep
+          end
+          context.bot.handlers.unregister(handler)
+        end
+        puts "registering: #{handler}"
       end
 
       def init_on_search(search)
@@ -175,9 +215,13 @@ module Irc
 
         init_parse_search_bots_on_join
 
-        @bot.on :message do |msg|
-          # puts "msg: #{msg}"
-        end
+        # @bot.on :message do |msg|
+        #   puts "msg: #{msg.message}"
+        # end
+
+        # @bot.on :private do |msg|
+        #   puts "prv: #{msg.message}"
+        # end
       end
 
       def on_next(wait = 1)

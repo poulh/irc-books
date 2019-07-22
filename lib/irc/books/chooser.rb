@@ -174,7 +174,7 @@ module Irc
 
               the_choice = [downloader, title].join(' ')
               book_menu.choice(the_choice) do
-                yield_choice(command: DOWNLOAD, phrase: the_choice)
+                yield_choice(command: DOWNLOAD, download_bot: downloader, title: title, phrase: the_choice)
                 if downloader != @preferred_downloader
                   answer = @cli.ask("Make #{downloader} your preferred downloader? (y/n)")
                   @preferred_downloader = downloader if answer.downcase[0] == 'y'
