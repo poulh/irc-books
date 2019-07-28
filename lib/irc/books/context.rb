@@ -180,34 +180,30 @@ module Irc
           context.model.search_results[search] = books
           context.chooser.notify_search_results_found(search)
           context.chooser.beep
-
+          file.unlink
           context.bot.handlers.unregister(handler)
         end
         handler
       end
 
-      def parse_search_results(file)
+      def self.unzip_readlines(file)
         zipfile = Zip::File.open(file.path)
-
-        zipfile.entries.each do |entry|
-          books = {}
-          results = zipfile.read(entry.name).split(/[\r\n]+/)
-          results.each do |result|
-            next unless result =~ /^!.*/
-
-            info_regex = '::INFO::'
-            next unless result =~ /#{info_regex}/
-
-            result = result[0, result.index(info_regex)].strip
-            owner, title = result.split(' ', 2)
-            books[title] = [] unless books.key?(title)
-            books[title] << owner
-          end
-
-          return books
+        zipfile.read(zipfile.entries.first.name).split(/[\r\n]+/).each do |line|
+          yield(line)
         end
-      ensure
-        file.unlink
+      end
+
+      INFO_REGEX = '::INFO::'
+
+      def parse_search_results(file)
+        books = Hash.new { |hash, key| hash[key] = [] }
+        Context.unzip_readlines(file) do |result|
+          next unless (result =~ /^!.*/) && (result =~ /#{INFO_REGEX}/)
+
+          owner, title = result[0, result.index(INFO_REGEX)].strip.split(' ', 2)
+          books[title] << owner
+        end
+        books
       end
 
       def setup_callbacks
