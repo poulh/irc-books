@@ -54,7 +54,7 @@ module Irc
 
             cmd = "@#{search[:search_bot]} #{search[:phrase]}"
             send_text_to_channel(EBOOKS, cmd)
-            init_on_search(search)
+            init_on_search_accepted(search)
 
           when Irc::Books::Chooser::DOWNLOAD
             send_text_to_channel(EBOOKS, phrase)
@@ -98,7 +98,7 @@ module Irc
 
           context.bot.handlers.unregister(handler)
         end
-        puts "registering: #{handler}"
+        handler
       end
 
       def init_on_download_book_file(command)
@@ -119,24 +119,40 @@ module Irc
           end
           context.bot.handlers.unregister(handler)
         end
-        puts "registering: #{handler}"
-      end
-
-      def init_on_search(search)
-        init_on_search_accepted(search)
+        handler
       end
 
       def init_on_search_accepted(search)
         regex_accepted = '^.*%{phrase}.*accepted.*$' % search
         @bot.loggers.info "registering: #{regex_accepted}"
         handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
-          context.init_on_search_results_found(search)
+          handlers = []
+          handlers << context.init_on_search_results_found(search, handlers)
+          handlers << context.init_on_no_search_results_found(search, handlers)
+
           context.chooser.notify_search_in_progress(search)
-          context.bot.handlers.unregister(handler)
+        end
+        handler
+      end
+
+      def self.unregister_handlers(context, handlers)
+        handlers.each do |handl|
+          context.bot.handlers.unregister(handl)
         end
       end
 
-      def init_on_search_results_found(search)
+      def init_on_no_search_results_found(search, handlers)
+        regex_no_results_found = '^.*%{phrase}.*returned .*no.* match.*$' % search
+        @bot.loggers.info "registering: #{regex_no_results_found}"
+
+        handler = @bot.on :private, /#{regex_no_results_found}/, self do |_msg, context|
+          context.chooser.notify_no_search_results_found(search)
+          Context.unregister_handlers(context, handlers)
+        end
+        handler
+      end
+
+      def init_on_search_results_found(search, handlers)
         regex_results_found = '^.*%{phrase}.*returned \d+ match.*$' % search
         @bot.loggers.info "registering: #{regex_results_found}"
         # Your search for "12,9Tom Clancy epub1,9" returned 1000 match
@@ -144,26 +160,26 @@ module Irc
         handler = @bot.on :private, /#{regex_results_found}/, self do |_msg, context|
           context.init_on_search_results_file_download(search)
           context.init_on_search_results_filename(search)
-          context.bot.handlers.unregister(handler)
+          context.chooser.notify_search_results_found(search)
+          Context.unregister_handlers(context, handlers)
         end
+        handler
       end
 
       def init_on_search_results_filename(search)
-        puts search
         # two spaces on purpose after 'results for'
         regex_results_filename = '^.*results for  %{phrase}.*$' % search
         regex_results_filename.tr!(' ', '_')
 
         @bot.loggers.info "registering: #{regex_results_filename}"
 
-        handler = @bot.on :private, /#{regex_results_filename}/, self do |msg, context|
-          puts msg.message.split(' ').join('|')
+        handler = @bot.on :private, /#{regex_results_filename}/, self do |_msg, context|
           context.bot.handlers.unregister(handler)
         end
+        handler
       end
 
       def init_on_search_results_file_download(search)
-        puts search
         # two spaces on purpose after 'results for'
         regex_results_file_download = '^.*results for  %{phrase}.*$' % search
         regex_results_file_download.tr!(' ', '_')
@@ -182,6 +198,7 @@ module Irc
 
           context.bot.handlers.unregister(handler)
         end
+        handler
       end
 
       def parse_search_results(file)
