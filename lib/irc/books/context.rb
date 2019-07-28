@@ -18,9 +18,8 @@ module Irc
       IRC_HIGHWAY_URL = 'irc.irchighway.net'
 
       def main_menu
-        wait_time = 30
-        puts "mandatory #{wait_time} second wait"
-        on_next(wait_time) do
+        @chooser.notify_wait_on_join
+        on_next(@model.wait_time) do
           @chooser.beep
           @chooser.choose
         end
@@ -28,7 +27,7 @@ module Irc
 
       def initialize(options)
         @bot = Cinch::Bot.new
-        @bot.loggers.level = options[:log_level]
+        @bot.loggers.level = options[:log_level] || :error
 
         @model = Irc::Books::SearchModel.new(options)
         @chooser = Irc::Books::Chooser.new(@model)
@@ -58,7 +57,7 @@ module Irc
 
           when Irc::Books::Chooser::DOWNLOAD
             send_text_to_channel(EBOOKS, phrase)
-            init_on_download_book(choice)
+            init_on_download_book_accepted(choice)
           else
             puts "unknown command #{choice}"
           end
@@ -75,25 +74,13 @@ module Irc
         end
       end
 
-      def notify_search_status(search)
-        case search[:status]
-        when :in_progress
-          chooser.notify_search_in_progress(search)
-        when :no_results
-          chooser.notify_no_search_results_found(search)
-        end
-      end
-
-      def init_on_download_book(command)
-        init_on_download_book_accepted(command)
-      end
-
       def init_on_download_book_accepted(command)
         phrase = Regexp.escape(command[:title])
         regex_accepted = "^.*accepted.*#{phrase}.*$"
 
         handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
-          puts "Download Accepted: #{command[:title]}"
+          context.chooser.notify_download_request_in_progress(phrase: command[:title])
+
           context.init_on_download_book_file(command)
 
           context.bot.handlers.unregister(handler)
@@ -111,10 +98,10 @@ module Irc
           context.on_next do
             context_model = context.model
             new_path = File.join(context_model.download_path, filename)
-            FileUtils.mv(file.path, new_path, verbose: true)
+            FileUtils.mv(file.path, new_path, verbose: false)
             context_model.downloads << new_path
-            puts "New Download: #{new_path}"
 
+            context.chooser.notify_book_downloaded(phrase: new_path)
             context.chooser.beep
           end
           context.bot.handlers.unregister(handler)
@@ -126,11 +113,10 @@ module Irc
         regex_accepted = '^.*%{phrase}.*accepted.*$' % search
         @bot.loggers.info "registering: #{regex_accepted}"
         handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
+          context.chooser.notify_search_in_progress(search)
           handlers = []
           handlers << context.init_on_search_results_found(search, handlers)
           handlers << context.init_on_no_search_results_found(search, handlers)
-
-          context.chooser.notify_search_in_progress(search)
         end
         handler
       end
@@ -159,8 +145,8 @@ module Irc
 
         handler = @bot.on :private, /#{regex_results_found}/, self do |_msg, context|
           context.init_on_search_results_file_download(search)
-          context.init_on_search_results_filename(search)
-          context.chooser.notify_search_results_found(search)
+          # context.init_on_search_results_filename(search)
+
           Context.unregister_handlers(context, handlers)
         end
         handler
@@ -188,13 +174,12 @@ module Irc
 
         handler = @bot.on :dcc_send, /#{regex_results_file_download}/, self do |_msg, context, dcc|
           filename, file = Irc::Books::MsgParser.parse_and_accept_file(dcc)
-          puts "#{filename} downloaded: #{file.path}"
+          @bot.loggers.info "#{filename} downloaded: #{file.path}"
 
-          context.on_next do
-            books = context.parse_search_results(file)
-            context.model.search_results[search] = books
-            context.chooser.beep
-          end
+          books = context.parse_search_results(file)
+          context.model.search_results[search] = books
+          context.chooser.notify_search_results_found(search)
+          context.chooser.beep
 
           context.bot.handlers.unregister(handler)
         end

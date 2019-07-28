@@ -244,20 +244,32 @@ module Irc
         main_menu_loop
       end
 
+      def notify_wait_on_join
+        puts "This channel has a mandatory #{@model.wait_time} second wait time when joining"
+      end
+
       def notify_search_in_progress(search)
         puts "Search in Progress: #{search[:phrase]}"
       end
 
       def notify_no_search_results_found(search)
-        puts "No Search Results Found for: #{search[:phrase]}"
+        puts "No Search Results Found: #{search[:phrase]}"
       end
 
       def notify_error_in_search_result(search)
-        puts "Unknown search result: #{search[:phrase]}"
+        puts "Unknown Search Result: #{search[:phrase]}"
       end
 
       def notify_search_results_found(search)
-        puts "New Search Results Found for: #{search[:phrase]}"
+        puts "New Search Results:: #{search[:phrase]}"
+      end
+
+      def notify_download_request_in_progress(search)
+        puts "Download in Progress: #{search[:phrase]}"
+      end
+
+      def notify_book_downloaded(search)
+        puts "New Download: #{search[:phrase]}"
       end
 
       def search
@@ -267,44 +279,6 @@ module Irc
           main_menu
         else
           yield_choice(command: SEARCH, phrase: title)
-        end
-      end
-
-      def accept_file(user, filename, file)
-        matches = @model.searches.keys.select { |search| search[:search_bot] == user && filename.index(search[:phrase].tr(' ', '_')) }
-
-        file_path = file.path
-        if matches.empty?
-          new_path = File.join(@model.download_path, filename)
-          FileUtils.mv(file_path, new_path, verbose: true)
-          @model.downloads << new_path
-          puts "New Download: #{new_path}"
-          return
-        end
-
-        begin
-          zipfile = Zip::File.open(file_path)
-
-          zipfile.entries.each do |entry|
-            books = {}
-            results = zipfile.read(entry.name).split(/[\r\n]+/)
-            results.each do |result|
-              next unless result =~ /^!.*/
-              next unless result =~ /#{INFO_REGEX}/
-
-              result = result[0, result.index(INFO_REGEX)].strip
-              owner, title = result.split(' ', 2)
-              books[title] = [] unless books.key?(title)
-              books[title] << owner
-            end
-
-            matches.each do |match|
-              add_results(match, books)
-              puts "New Search Results: #{match[:phrase]}"
-            end
-          end
-        ensure
-          file.unlink
         end
       end
     end

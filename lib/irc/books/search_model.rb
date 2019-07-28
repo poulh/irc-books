@@ -5,13 +5,15 @@ module Irc
     class SearchModel
       attr_accessor :search_bots, :search_suffix
       attr_accessor :active_searches, :downloads, :search_results, :nickname, :downloaders
-      attr_reader :download_path, :searches
+      attr_reader :download_path, :searches, :wait_time
       def initialize(options)
         @nickname = options[:nickname]
         @search_bots = []
         @active_searches = {}
         @search_results = {}
         @downloads = []
+
+        @wait_time = 30
 
         @search_suffix = 'epub'
         self.download_path = '~/Downloads/ebooks'
