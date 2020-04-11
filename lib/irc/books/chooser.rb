@@ -12,11 +12,13 @@ module Irc
 
       SEARCH = :search
       DOWNLOAD = :download
+      MAIN_MENU = :main_menu
+      QUIT = :quit
 
-      EVENTS = %i[choice quit].freeze
+      EVENTS = %i[choice main_menu quit].freeze
 
-      def initialize(model)
-        @model = model
+      def initialize(search_model)
+        @search_model = search_model
 
         @callbacks = {}
 
@@ -46,7 +48,7 @@ module Irc
       end
 
       def choose_default_search_suffix
-        @model.search_suffix = @cli.ask('What would you like the search suffix to be?')
+        @search_model.search_suffix = @cli.ask('What would you like the search suffix to be?')
       end
 
       def choose_preferences
@@ -55,16 +57,16 @@ module Irc
 
           main_menu_choice(pref_menu)
 
-          pref_menu.choice("Choose Default Search Bot (#{@model.search_bot})") do
+          pref_menu.choice("Choose Default Search Bot (#{@search_model.search_bot})") do
             choose_default_search_bot
           end
 
-          pref_menu.choice("Change Search Suffix (#{@model.search_suffix})") do
+          pref_menu.choice("Change Search Suffix (#{@search_model.search_suffix})") do
             choose_default_search_suffix
           end
 
-          pref_menu.choice("Change Download Path (#{@model.download_path})") do
-            @model.download_path = @cli.ask(Question.download_path)
+          pref_menu.choice("Change Download Path (#{@search_model.download_path})") do
+            @search_model.download_path = @cli.ask(Question.download_path)
           end
 
           unless @downloaders.empty?
@@ -76,23 +78,17 @@ module Irc
         end
       end
 
-      def main_menu_loop
-        loop do
-          main_menu
-        end
-      end
-
       def main_menu
         @cli.choose do |main_menu|
           main_menu.prompt = 'What do you want to do?'
 
           main_menu.choice('Search For Books') do
-            search
+            search_for_books
           end
 
-          unless @model.searches.empty?
-            main_menu.choice("Active Searches (#{@model.searches.size})") do
-              @model.searches.each do |_search_bot, bot_searches|
+          unless @search_model.searches.empty?
+            main_menu.choice("Active Searches (#{@search_model.searches.size})") do
+              @search_model.searches.each do |_search_bot, bot_searches|
                 bot_searches.each do |_cleaned_search, search|
                   puts "#{search[:search_bot]} #{search[:status]} - #{search[:phrase]}"
                 end
@@ -100,15 +96,15 @@ module Irc
             end
           end
 
-          unless @model.search_results.empty?
-            main_menu.choice("Search Results (#{@model.search_results.size})") do
+          unless @search_model.search_results.empty?
+            main_menu.choice("Search Results (#{@search_model.search_results.size})") do
               choose_results
             end
           end
 
-          unless @model.downloads.empty?
-            main_menu.choice("View Downloads (#{@model.downloads.size})") do
-              puts @model.downloads.join("\n")
+          unless @search_model.downloads.empty?
+            main_menu.choice("View Downloads (#{@search_model.downloads.size})") do
+              puts @search_model.downloads.join("\n")
             end
           end
 
@@ -116,13 +112,7 @@ module Irc
             choose_preferences
           end
 
-          refresh = 'Refresh'
-
-          main_menu.choice(refresh) do
-            nil
-          end
-
-          main_menu.default = refresh
+          main_menu_choice(main_menu,choice_name='Refresh')
 
           main_menu.choice('Quit') do
             do_quit
@@ -130,12 +120,11 @@ module Irc
         end
       end
 
-      def main_menu_choice(menu)
-        mm = 'Main Menu'
-        menu.choice(mm) do
-          nil
+      def main_menu_choice(menu, choice_name='Main Menu')
+        menu.choice(choice_name) do
+          @callbacks[:main_menu].call
         end
-        menu.default = mm
+        menu.default = choice_name
       end
 
       def choose_default_downloader
@@ -153,9 +142,9 @@ module Irc
       end
 
       def choose_books(search, preferred_downloader)
-        return unless @model.search_results.key?(search)
+        return unless @search_model.search_results.key?(search)
 
-        books = @model.search_results[search]
+        books = @search_model.search_results[search]
         @cli.choose do |book_menu|
           book_menu.prompt = 'Which book would you like to download?'
 
@@ -193,7 +182,7 @@ module Irc
 
           main_menu_choice(results_menu)
 
-          @model.search_results.each do |search, results|
+          @search_model.search_results.each do |search, results|
             results_menu.choice("#{search[:phrase]} (#{results.keys.size})") do
               choose_default_downloader unless @preferred_downloader
               choose_books(search, @preferred_downloader)
@@ -206,17 +195,17 @@ module Irc
         @cli.choose do |bot_menu|
           bot_menu.prompt = 'Which search bot would you like to use?'
           main_menu_choice(bot_menu)
-          @model.search_bots.each do |bot|
-            bot_menu.choice(bot + (bot == @model.search_bot ? '*' : '')) do
-              @model.search_bot = bot
+          @search_model.search_bots.each do |bot|
+            bot_menu.choice(bot + (bot == @search_model.search_bot ? '*' : '')) do
+              @search_model.search_bot = bot
             end
           end
         end
       end
 
       def add_results(search, results)
-        @model.searches.delete(search)
-        @model.search_results[search] = results
+        @search_model.searches.delete(search)
+        @search_model.search_results[search] = results
         results.each do |_title, downloaders|
           downloaders.each do |downloader|
             @downloaders[downloader] = true
@@ -238,14 +227,8 @@ module Irc
         puts "\a"
       end
 
-      def choose
-        check_initialized
-
-        main_menu_loop
-      end
-
       def notify_wait_on_join
-        puts "This channel has a mandatory #{@model.wait_time} second wait time when joining"
+        puts "This channel has a mandatory #{@search_model.wait_time} second wait time when joining"
       end
 
       def notify_search_in_progress(search)
@@ -272,11 +255,11 @@ module Irc
         puts "New Download: #{search[:phrase]}"
       end
 
-      def search
+      def search_for_books
         title = @cli.ask('What books would you like to search for? (Press <Return> for Main Menu)')
         case title.downcase
         when ''
-          main_menu
+          @callbacks[:main_menu].call
         else
           yield_choice(command: SEARCH, phrase: title)
         end

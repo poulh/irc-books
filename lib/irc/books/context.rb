@@ -11,17 +11,24 @@ module Irc
   module Books
     # main class of application
     class Context
-      attr_accessor :model, :chooser
+      attr_reader :bot
+      attr_accessor :search_model, :chooser
       include Cinch::Helpers
 
       EBOOKS = '#ebooks'
       IRC_HIGHWAY_URL = 'irc.irchighway.net'
 
-      def main_menu
+      def main_menu_on_join
         @chooser.notify_wait_on_join
-        on_next(@model.wait_time) do
-          @chooser.beep
-          @chooser.choose
+        
+        chooser_main_menu(wait_time=@search_model.wait_time, beep=true)
+      end
+
+      def chooser_main_menu(wait_time=0, beep=false)
+        on_next(wait_time=wait_time) do
+          @chooser.check_initialized
+          @chooser.beep if beep
+          @chooser.main_menu
         end
       end
 
@@ -29,11 +36,9 @@ module Irc
         @bot = Cinch::Bot.new
         @bot.loggers.level = options[:log_level] || :error
 
-        @model = Irc::Books::SearchModel.new(options)
-        @chooser = Irc::Books::Chooser.new(@model)
+        @search_model = Irc::Books::SearchModel.new(options)
+        @chooser = Irc::Books::Chooser.new(@search_model)
       end
-
-      attr_reader :bot
 
       def init_chooser_on_quit
         @chooser.on :quit do
@@ -42,12 +47,18 @@ module Irc
         end
       end
 
+      def init_chooser_on_menu
+        @chooser.on :main_menu do
+          chooser_main_menu
+        end
+      end
+
       def init_chooser_on_choice
         @chooser.on :choice do |choice|
           phrase = choice[:phrase]
           case choice[:command]
           when Irc::Books::Chooser::SEARCH
-            search, status = @model.add_search(phrase)
+            search, status = @search_model.add_search(phrase)
 
             next if status == :error
 
@@ -68,9 +79,9 @@ module Irc
         @bot.on :join, //, self do |msg, ctxt|
           next unless Irc::Books::MsgParser.bot_nick_msg?(@bot, msg)
 
-          ctxt.model.search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
+          ctxt.search_model.search_bots = Irc::Books::MsgParser.parse_search_bots_from_topic(msg)
 
-          ctxt.main_menu
+          ctxt.main_menu_on_join
         end
       end
 
@@ -209,6 +220,8 @@ module Irc
       def setup_callbacks
         init_chooser_on_quit
 
+        init_chooser_on_menu
+
         init_chooser_on_choice
 
         init_parse_search_bots_on_join
@@ -222,8 +235,8 @@ module Irc
         # end
       end
 
-      def on_next(wait = 1)
-        @bot.Timer(wait, shots: 1) do
+      def on_next(wait_time = 1)
+        @bot.Timer(wait_time, shots: 1) do
           yield
         end
       end
@@ -237,7 +250,7 @@ module Irc
 
       def ask_nickname
         @chooser.ask_nickname do |nickname|
-          @model.nickname = nickname
+          @search_model.nickname = nickname
         end
       end
 
@@ -245,14 +258,14 @@ module Irc
         @bot.configure do |conf|
           conf.server = Context::IRC_HIGHWAY_URL
           conf.channels = [Context::EBOOKS]
-          conf.nick = @model.nickname
+          conf.nick = @search_model.nickname
         end
       end
 
       def start
         setup_callbacks
 
-        ask_nickname unless @model.nickname
+        ask_nickname unless @search_model.nickname
 
         configure_bot
 
