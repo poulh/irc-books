@@ -84,6 +84,7 @@ module Irc
 
           main_menu.choice('Search For Books') do
             search_for_books
+            @callbacks[:main_menu].call
           end
 
           unless @search_model.searches.empty?
@@ -91,6 +92,7 @@ module Irc
               @search_model.searches.each do |_search_bot, bot_searches|
                 bot_searches.each do |_cleaned_search, search|
                   puts "#{search[:search_bot]} #{search[:status]} - #{search[:phrase]}"
+                  @callbacks[:main_menu].call
                 end
               end
             end
@@ -105,6 +107,7 @@ module Irc
           unless @search_model.downloads.empty?
             main_menu.choice("View Downloads (#{@search_model.downloads.size})") do
               puts @search_model.downloads.join("\n")
+              @callbacks[:main_menu].call
             end
           end
 

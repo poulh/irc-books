@@ -107,7 +107,7 @@ module Irc
           filename, file = Irc::Books::MsgParser.parse_and_accept_file(dcc)
 
           context.on_next do
-            context_model = context.model
+            context_model = context.search_model
             new_path = File.join(context_model.download_path, filename)
             FileUtils.mv(file.path, new_path, verbose: false)
             context_model.downloads << new_path
@@ -188,7 +188,7 @@ module Irc
           @bot.loggers.info "#{filename} downloaded: #{file.path}"
 
           books = context.parse_search_results(file)
-          context.model.search_results[search] = books
+          context.search_model.search_results[search] = books
           context.chooser.notify_search_results_found(search)
           context.chooser.beep
           file.unlink
