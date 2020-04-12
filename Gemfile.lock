@@ -4,7 +4,11 @@ PATH
     irc-books (0.1.0)
       cinch (~> 2.3, >= 2.3.4)
       highline (~> 2.0, >= 2.0.2)
+<<<<<<< HEAD
       rubyzip (~> 1.2, >= 1.2.3)
+=======
+      rubyzip (>= 1.2.3, < 3.0)
+>>>>>>> fbf69b3af73144add8ba2ede9053f39e06f40dd8
 
 GEM
   remote: https://rubygems.org/
@@ -12,7 +16,11 @@ GEM
     cinch (2.3.4)
     diff-lcs (1.3)
     highline (2.0.3)
+<<<<<<< HEAD
     rake (13.0.1)
+=======
+    rake (10.5.0)
+>>>>>>> fbf69b3af73144add8ba2ede9053f39e06f40dd8
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
@@ -26,7 +34,11 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.8.0)
     rspec-support (3.8.2)
+<<<<<<< HEAD
     rubyzip (1.3.0)
+=======
+    rubyzip (2.3.0)
+>>>>>>> fbf69b3af73144add8ba2ede9053f39e06f40dd8
 
 PLATFORMS
   ruby
