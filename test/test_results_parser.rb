@@ -56,26 +56,26 @@ class ResultParserTest < Minitest::Test
 
     assert_equal "DukeLupus", book.source
     assert_equal "Alex Berenson", book.author
-    assert_equal "The Ghost War", book.title
+    assert_equal "The Ghost War - Berenson, Alex", book.title
     assert_equal :epub, book.book_format
     assert_equal "John Wells", book.series
     assert_equal 2, book.series_number
     assert_equal :unknown, book.book_version
-    assert_equal :epub, book.downloaded_format
+    assert_equal "epub", book.downloaded_format
     assert_equal "518.61KB", book.size
   end
 
   def test_parse_author
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author("Smith, Jim")
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author("Smith,  Jim")
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author(" Smith,  Jim")
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author("Smith, Jim ")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Smith, Jim")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Smith,  Jim")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author(" Smith,  Jim")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Smith, Jim ")
 
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author("Jim Smith")
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author("Jim Smith ")
-    assert_equal "Jim Smith", Irc::Books::ResultsParser.parse_author(" Jim Smith ")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Jim Smith")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Jim Smith ")
+    assert_equal "Jim Smith", Irc::Books::ResultsParser::BookFactory.parse_author(" Jim Smith ")
 
-    assert_equal "Jim Middlename Smith", Irc::Books::ResultsParser.parse_author("Jim Middlename Smith")
-    assert_equal "Jim Middlename Smith", Irc::Books::ResultsParser.parse_author("Smith, Jim Middlename")
+    assert_equal "Jim Middlename Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Jim Middlename Smith")
+    assert_equal "Jim Middlename Smith", Irc::Books::ResultsParser::BookFactory.parse_author("Smith, Jim Middlename")
   end
 end

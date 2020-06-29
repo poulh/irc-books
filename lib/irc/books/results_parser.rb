@@ -2,17 +2,42 @@ module Irc
   module Books
     # parse incoming irc msgs for meaningful values
     module ResultsParser
-      class BookParser
-        REGEX = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(.\S)/
-        SOURCE = 0
-        AUTHOR = 1
-        TITLE = 2
-        DOWNLOAD_FORMAT = 3
-        SIZE = 4
-      end
+      PARSERS = [
+        {
+          name: "Series Book Parser",
+          regex: /^!(\S*) (.*) - \[?(.*) (\d+)\]? - (.*)\.(\S+)\s+::INFO::\s+(.*)/,
+          line: 0,
+          source: 1,
+          author: 2,
+          series: 3,
+          series_number: 4,
+          title: 5,
+          downloaded_format: 6,
+          size: 7,
+        },
+        {
+          name: "Book Parser",
+          regex: /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(.*)/,
+          line: 0,
+          source: 1,
+          author: 2,
+          title: 3,
+          downloaded_format: 4,
+          size: 5,
+        },
+      ]
 
-      BookRegex = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
-      SeriesBookRegex = /^!(\S*) (.*) - \[?(.*) (\d+)\]? - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
+      # class BookParser
+      #   REGEX = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(.\S)/
+      #   SOURCE = 0
+      #   AUTHOR = 1
+      #   TITLE = 2
+      #   DOWNLOAD_FORMAT = 3
+      #   SIZE = 4
+      # end
+
+      # BookRegex = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
+      # SeriesBookRegex = /^!(\S*) (.*) - \[?(.*) (\d+)\]? - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
       LabelRegex = /^(.*) [\[\(](.*)[\)\]]$/
 
       BOOK_FORMAT = [:epub, :mobi]
@@ -26,7 +51,7 @@ module Irc
                       :downloaded_format, :size, :book_version,
                       :book_format, :labels
 
-        def initialize(line, source, author, title, downloaded_format, size)
+        def initialize(line:, source:, author:, title:, downloaded_format:, size:, series:, series_number:)
           title, book_version, book_format, labels = parse_title_labels(title, author, downloaded_format)
 
           @line = line
@@ -34,8 +59,9 @@ module Irc
           @title = title
           @author = author
 
-          @series = nil
-          @series_number = 0
+          @series = series
+          self.series_number = series_number
+
           @downloaded_format = downloaded_format
           @size = size
           @book_version = book_version
@@ -64,14 +90,14 @@ module Irc
                 labels << label
               end
 
-              if BOOK_FORMAT.include?(downloaded_format.to_sym)
-                book_format = downloaded_format.to_sym if book_format == :unknown
-              end
-
               found_match = true
               title.strip!
             end
             break unless found_match == true
+          end
+
+          if BOOK_FORMAT.include?(downloaded_format.to_sym)
+            book_format = downloaded_format.to_sym if book_format == :unknown
           end
 
           return title, book_version, book_format, labels
@@ -98,59 +124,47 @@ module Irc
         end
       end
 
-      class SeriesBook < Book
-        def initialize(line, source, author, series, series_number, title, downloaded_as, size)
-          super(line, source, author, title, downloaded_as, size)
-          self.series = series
-          self.series_number = series_number
-        end
-      end
+      class BookFactory
+        def create(parser, match_array)
+          params = {
+            series: nil,
+            series_number: 0,
+          }
 
-      def self.parse_author(author)
-        last, first = author.split(", ")
-        if first
-          author = "#{first} #{last}"
-          # else
-
-          #   author = last unless first
-        end
-
-        parts = []
-        author.split(" ").each do |part|
-          parts << part.strip
+          match_array[parser[:author]] = BookFactory.parse_author(match_array[parser[:author]])
+          parser.each do |key, val|
+            next if key == :regex
+            next if key == :name
+            params[key] = match_array[val]
+          end
+          b = Book.new(params)
+          return b
         end
 
-        author = parts.join(" ")
-        author.strip
-      end
+        def self.parse_author(author)
+          last, first = author.split(", ")
+          if first
+            author = "#{first} #{last}"
+          end
 
-      def self.parse(result, parser)
-        result.match(parser.REGEX) do |match|
-          match_array = match.to_a
-          author = match_array[parser.AUTHOR]
-          match_array[parser.AUTHOR] = parse_author(author)
-          b = SeriesBook.new(*match_array)
+          parts = []
+          author.split(" ").each do |part|
+            parts << part.strip
+          end
+
+          author = parts.join(" ")
+          author.strip
         end
       end
 
       def self.parse_result(result)
-        result.match(SeriesBookRegex) do |match|
-          match_array = match.to_a
-          match_array[2] = parse_author(match_array[2])
-
-          b = SeriesBook.new(*match_array)
-          return b
+        PARSERS.each do |parser|
+          result.match(parser[:regex]) do |match|
+            bf = BookFactory.new
+            match_array = match.to_a
+            return bf.create(parser, match_array)
+          end
         end
-
-        result.match(BookRegex) do |match|
-          match_array = match.to_a
-          match_array[2] = parse_author(match_array[2])
-
-          b = Book.new(*match_array)
-          return b
-        end
-
-        return nil
       end
     end
   end
