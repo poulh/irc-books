@@ -1,4 +1,6 @@
-require "irc/books/version"
+# frozen_string_literal: true
+
+require 'irc/books/version'
 
 module Irc
   module Books

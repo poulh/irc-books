@@ -115,7 +115,7 @@ module Irc
             choose_preferences
           end
 
-          main_menu_choice(main_menu,choice_name='Refresh')
+          main_menu_choice(main_menu, choice_name = 'Refresh')
 
           main_menu.choice('Quit') do
             do_quit
@@ -123,7 +123,7 @@ module Irc
         end
       end
 
-      def main_menu_choice(menu, choice_name='Main Menu')
+      def main_menu_choice(menu, choice_name = 'Main Menu')
         menu.choice(choice_name) do
           @callbacks[:main_menu].call
         end
@@ -162,14 +162,18 @@ module Irc
           books.keys.sort.each do |title|
             downloaders = books[title]
             downloaders.each do |downloader|
-              next if preferred_downloader && (downloader != preferred_downloader)
+              if preferred_downloader && (downloader != preferred_downloader)
+                next
+              end
 
               the_choice = [downloader, title].join(' ')
               book_menu.choice(the_choice) do
                 yield_choice(command: DOWNLOAD, download_bot: downloader, title: title, phrase: the_choice)
                 if downloader != @preferred_downloader
                   answer = @cli.ask("Make #{downloader} your preferred downloader? (y/n)")
-                  @preferred_downloader = downloader if answer.downcase[0] == 'y'
+                  if answer.downcase[0] == 'y'
+                    @preferred_downloader = downloader
+                  end
                   preferred_downloader = @preferred_downloader
                 end
                 choose_books(search, preferred_downloader)

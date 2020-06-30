@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 module Irc
   module Books
     # parse incoming irc msgs for meaningful values
     module ResultsParser
       PARSERS = [
         {
-          name: "Series Book Parser",
+          name: 'Series Book Parser',
           regex: /^!(\S*) (.*) - \[?(.*) (\d+)\]? - (.*)\.(\S+)\s+::INFO::\s+(.*)/,
           line: 0,
           source: 1,
@@ -13,37 +15,26 @@ module Irc
           series_number: 4,
           title: 5,
           downloaded_format: 6,
-          size: 7,
+          size: 7
         },
         {
-          name: "Book Parser",
+          name: 'Book Parser',
           regex: /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(.*)/,
           line: 0,
           source: 1,
           author: 2,
           title: 3,
           downloaded_format: 4,
-          size: 5,
-        },
-      ]
+          size: 5
+        }
+      ].freeze
 
-      # class BookParser
-      #   REGEX = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(.\S)/
-      #   SOURCE = 0
-      #   AUTHOR = 1
-      #   TITLE = 2
-      #   DOWNLOAD_FORMAT = 3
-      #   SIZE = 4
-      # end
+      LABEL_REGEX = /^(.*) [\[\(](.*)[\)\]]$/.freeze
 
-      # BookRegex = /^!(\S*) (.*) - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
-      # SeriesBookRegex = /^!(\S*) (.*) - \[?(.*) (\d+)\]? - (.*)\.(\S+)\s+::INFO::\s+(\S+)/
-      LabelRegex = /^(.*) [\[\(](.*)[\)\]]$/
+      BOOK_FORMAT = %i[epub mobi].freeze
 
-      BOOK_FORMAT = [:epub, :mobi]
-
-      BookVersionRegex = /v(\d).\d/
-      BOOK_VERSION = ["v5.0", "retail"]
+      BOOK_VERSION_REGEX = /v(\d).\d/.freeze
+      BOOK_VERSION = ['v5.0', 'retail'].freeze
 
       class Book
         attr_accessor :line, :source, :series, :author,
@@ -69,7 +60,7 @@ module Irc
           @labels = labels
         end
 
-        def parse_title_labels(title, author, downloaded_format)
+        def parse_title_labels(title, _author, downloaded_format)
           labels = []
           book_format = :unknown
           book_version = :unknown
@@ -77,13 +68,13 @@ module Irc
           loop do
             found_match = false
 
-            title.match(LabelRegex) do |match|
+            title.match(LABEL_REGEX) do |match|
               title = match[1]
               label = match[2]
               # book_version_match = label.match(BookVersionRegex)
               if BOOK_VERSION.include?(label)
                 book_version = label
-                #book_version = Integer(book_version_match[1])
+                # book_version = Integer(book_version_match[1])
               elsif BOOK_FORMAT.include?(label.to_sym)
                 book_format = label.to_sym
               else
@@ -100,7 +91,7 @@ module Irc
             book_format = downloaded_format.to_sym if book_format == :unknown
           end
 
-          return title, book_version, book_format, labels
+          [title, book_version, book_format, labels]
         end
 
         def to_s
@@ -128,31 +119,30 @@ module Irc
         def create(parser, match_array)
           params = {
             series: nil,
-            series_number: 0,
+            series_number: 0
           }
 
           match_array[parser[:author]] = BookFactory.parse_author(match_array[parser[:author]])
           parser.each do |key, val|
             next if key == :regex
             next if key == :name
+
             params[key] = match_array[val]
           end
           b = Book.new(params)
-          return b
+          b
         end
 
         def self.parse_author(author)
-          last, first = author.split(", ")
-          if first
-            author = "#{first} #{last}"
-          end
+          last, first = author.split(', ')
+          author = "#{first} #{last}" if first
 
           parts = []
-          author.split(" ").each do |part|
+          author.split(' ').each do |part|
             parts << part.strip
           end
 
-          author = parts.join(" ")
+          author = parts.join(' ')
           author.strip
         end
       end
