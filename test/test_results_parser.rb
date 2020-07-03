@@ -6,7 +6,7 @@ require 'irc/books/results_parser'
 class ResultParserTest < Minitest::Test
   def test_book_source_author_title_bookfmt_downloadfmt_size
     line = '!Ook Alex Berenson - The Prince of Beers (epub).rar ::INFO:: 89.36KB'
-    book = Irc::Books::ResultsParser.parse_result(line)
+    book = Irc::Books::ResultsParser.create_book(line)
 
     assert_equal 'Ook', book.source
     assert_equal 'Alex Berenson', book.author
@@ -21,7 +21,7 @@ class ResultParserTest < Minitest::Test
 
   def test_series_retail
     line = '!JimBob420 Alex Berenson - [John Wells 09] - Twelve Days (retail) (epub).rar ::INFO:: 1.01MB'
-    book = Irc::Books::ResultsParser.parse_result(line)
+    book = Irc::Books::ResultsParser.create_book(line)
 
     assert_equal 'JimBob420', book.source
     assert_equal 'Alex Berenson', book.author
@@ -38,7 +38,7 @@ class ResultParserTest < Minitest::Test
     # two spaces before ::INFO:: intentional
     line = '!dragnbreaker Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub  ::INFO:: 561.8KB'
 
-    book = Irc::Books::ResultsParser.parse_result(line)
+    book = Irc::Books::ResultsParser.create_book(line)
 
     assert_equal 'dragnbreaker', book.source
     assert_equal 'Alex Berenson', book.author
@@ -54,7 +54,7 @@ class ResultParserTest < Minitest::Test
   def test_3
     line = '!DukeLupus Berenson, Alex - John Wells 02 - The Ghost War - Berenson, Alex.epub ::INFO:: 518.61KB'
 
-    book = Irc::Books::ResultsParser.parse_result(line)
+    book = Irc::Books::ResultsParser.create_book(line)
 
     assert_equal 'DukeLupus', book.source
     assert_equal 'Alex Berenson', book.author

@@ -31,8 +31,8 @@ module Irc
         }
       ].freeze
 
-      def self.create(parser, match_array)
-        params = {
+      def self.create_hash(parser, match_array)
+        book_hash = {
           series: nil,
           series_number: 0
         }
@@ -41,9 +41,10 @@ module Irc
         parser.each do |key, val|
           next if %i[regex name].include?(key)
 
-          params[key] = match_array[val]
+          book_hash[key] = match_array[val]
         end
-        Book.new(params)
+
+        book_hash
       end
 
       def self.parse_author(author)
@@ -59,13 +60,20 @@ module Irc
         author.strip
       end
 
+      def self.create_book(result)
+        book_hash = ResultsParser.parse_result(result)
+        # puts book_hash
+        Book.new(book_hash)
+      end
+
       def self.parse_result(result)
         PARSERS.each do |parser|
           result.match(parser[:regex]) do |match|
             match_array = match.to_a
-            return ResultsParser.create(parser, match_array)
+            return create_hash(parser, match_array)
           end
         end
+        raise "Error - No Parser could parse: #{result}"
       end
     end
   end
