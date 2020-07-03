@@ -68,16 +68,16 @@ class ResultParserTest < Minitest::Test
   end
 
   def test_parse_author
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Smith, Jim')
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Smith,  Jim')
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author(' Smith,  Jim')
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Smith, Jim ')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author('Smith, Jim')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author('Smith,  Jim')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author(' Smith,  Jim')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author('Smith, Jim ')
 
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Jim Smith')
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Jim Smith ')
-    assert_equal 'Jim Smith', Irc::Books::ResultsParser::BookFactory.parse_author(' Jim Smith ')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author('Jim Smith')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author('Jim Smith ')
+    assert_equal 'Jim Smith', Irc::Books::ResultsParser.parse_author(' Jim Smith ')
 
-    assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Jim Middlename Smith')
-    assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser::BookFactory.parse_author('Smith, Jim Middlename')
+    assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser.parse_author('Jim Middlename Smith')
+    assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser.parse_author('Smith, Jim Middlename')
   end
 end
