@@ -110,19 +110,32 @@ class ResultParserTest < Minitest::Test
         book_version: nil,
         downloaded_format: 'epub',
         size: '422.1KB'
+      },
+      {
+        line: '!LawdyServer Baldacci, David - No Time Left - Baldacci, David.epub  ::INFO:: 174.9KB',
+        source: 'LawdyServer',
+        author: 'David Baldacci',
+        title: 'No Time Left',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        downloaded_format: 'epub',
+        size: '174.9KB'
+      },
+      {
+        line: '!Oatmeal David Baldacci - Freddy and the French Fries - The Mystery of Silas Finklebean (epub).rar  ::INFO:: 1.9MB',
+        source: 'Oatmeal',
+        author: 'David Baldacci',
+        title: 'The Mystery of Silas Finklebean',
+        book_format: 'epub',
+        series: 'Freddy and the French Fries',
+        series_number: '',
+        book_version: nil,
+        downloaded_format: 'rar',
+        size: '1.9MB'
+
       }
-      #  {
-      #   line: '',
-      #   source: '',
-      #   author: '',
-      #   title: '',
-      #   book_format: '',
-      #   series: nil,
-      #   series_number: nil,
-      #   book_version: nil,
-      #   downloaded_format: '',
-      #   size: nil
-      # }
 
     ]
   end

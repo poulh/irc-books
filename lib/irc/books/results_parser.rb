@@ -57,11 +57,11 @@ module Irc
         }
       end
 
-      def self.match_or_throw(phrase, reg)
+      def self.match_or_throw(phrase, hint, reg)
         match = phrase.match(reg)
-        raise "cannot parse : #{phrase}" unless match
+        raise "cannot parse #{hint}: #{phrase}" unless match
 
-        match_array = match.to_a.collect(&:strip)
+        match_array = match.to_a.collect { |m| m&.strip }
 
         match_array
       end
@@ -79,7 +79,7 @@ module Irc
         labels = []
         loop do
           begin
-            _orig, phrase, label = match_or_throw(phrase, /(.*)[\[\(](.*)[\)\]]/)
+            _orig, phrase, label = match_or_throw(phrase, :labels, /(.*)[\[\(](.*)[\)\]]/)
             labels << label
           rescue StandardError => _e
             break
@@ -90,11 +90,11 @@ module Irc
 
       def self.create_hash(result)
         book_hash = create_bh
-        book_hash[:line], book_hash[:source], remainder = match_or_throw(result, /^!(\S*)\s+(.*)/)
+        book_hash[:line], book_hash[:source], remainder = match_or_throw(result, :source, /^!(\S*)\s+(.*)/)
 
         remainder, book_hash[:size] = remainder.split('::INFO::').collect(&:strip)
         parts = remainder.split(' - ').collect(&:strip)
-        _orig, parts[-1], book_hash[:downloaded_format] = match_or_throw(parts[-1], /(.*)\.(.*)/)
+        _orig, parts[-1], book_hash[:downloaded_format] = match_or_throw(parts[-1], :downloaded_format, /(.*)\.(.*)/)
 
         parts[-1], labels = parse_labels_off_phrase(parts[-1])
 
@@ -105,9 +105,11 @@ module Irc
         end
         book_hash[:labels] = labels
 
+        parts.pop if parts[0] == parts[-1]
+
         if parts.size > 2
           series_name_number = parts.delete_at(1)
-          _orig, book_hash[:series], book_hash[:series_number] = match_or_throw(series_name_number, /\[?(.*) (\d+)\]?/)
+          _orig, book_hash[:series], book_hash[:series_number] = match_or_throw(series_name_number, :series, /\[?([a-zA-Z\s]+)\s?(\d*)\]?/)
           # parts.pop if parts.size > 2
         end
 
