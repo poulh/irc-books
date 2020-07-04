@@ -4,84 +4,144 @@ require 'minitest/autorun'
 require 'irc/books/results_parser'
 
 class ResultParserTest < Minitest::Test
-  def test_book_source_author_title_bookfmt_downloadfmt_size
-    line = '!Ook Alex Berenson - The Prince of Beers (epub).rar ::INFO:: 89.36KB'
-    book = Irc::Books::ResultsParser.create_book(line)
+  def setup
+    @books = [
+      {
+        line: '!Ook Alex Berenson - The Prince of Beers (epub).rar ::INFO:: 89.36KB',
+        source: 'Ook',
+        author: 'Alex Berenson',
+        title: 'The Prince of Beers',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        downloaded_format: 'rar',
+        size: '89.36KB'
+      },
+      {
+        line: '!JimBob420 Alex Berenson - [John Wells 09] - Twelve Days (retail) (epub).rar ::INFO:: 1.01MB',
+        source: 'JimBob420',
+        author: 'Alex Berenson',
+        title: 'Twelve Days',
+        book_format: 'epub',
+        series: 'John Wells',
+        series_number: '09',
+        book_version: 'retail',
+        downloaded_format: 'rar',
+        size: '1.01MB'
+      },
+      {
+        line: '!dragnbreaker Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub  ::INFO:: 561.8KB',
+        source: 'dragnbreaker',
+        author: 'Alex Berenson',
+        title: 'The Midnight House',
+        book_format: 'epub',
+        series: 'John Wells',
+        series_number: '04',
+        book_version: 'v5.0',
+        downloaded_format: 'epub',
+        size: '561.8KB'
+      },
+      {
+        line: '!DukeLupus Berenson, Alex - John Wells 02 - The Ghost War - Berenson, Alex.epub ::INFO:: 518.61KB',
+        source: 'DukeLupus',
+        author: 'Alex Berenson',
+        title: 'The Ghost War',
+        book_format: 'epub',
+        series: 'John Wells',
+        series_number: '02',
+        book_version: nil,
+        downloaded_format: 'epub',
+        size: '518.61KB'
+      },
+      {
+        line: '!Xon Deliver Us from Evil - David Baldacci(epub).rar',
+        source: 'Xon',
+        author: 'Deliver Us from Evil',
+        title: 'David Baldacci',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        downloaded_format: 'rar',
+        size: nil
+      }, {
+        line: '!Xon David Baldacci - [Camel Club 03] - Stone Cold (v5.0) (epub).rar',
+        source: 'Xon',
+        author: 'David Baldacci',
+        title: 'Stone Cold',
+        book_format: 'epub',
+        series: 'Camel Club',
+        series_number: '03',
+        book_version: 'v5.0',
+        downloaded_format: 'rar',
+        size: nil
+      }, {
+        line: '!TrainFiles David Baldacci - [Atlee Pine 02] - A Minute to Midnight  (retail) (epub).rar',
+        source: 'TrainFiles',
+        author: 'David Baldacci',
+        title: 'A Minute to Midnight',
+        book_format: 'epub',
+        series: 'Atlee Pine',
+        series_number: '02',
+        book_version: 'retail',
+        downloaded_format: 'rar',
+        size: nil
+      }, {
+        line: '!Oatmeal David Baldacci - [Amos Decker 06] - Walk the Wire (US) (epub).rar  ::INFO:: 698.2KB',
+        source: 'Oatmeal',
+        author: 'David Baldacci',
+        title: 'Walk the Wire',
+        book_format: 'epub',
+        series: 'Amos Decker',
+        series_number: '06',
+        book_version: nil,
+        downloaded_format: 'rar',
+        size: '698.2KB',
+        labels: ['US']
+      }, {
+        line: '!Oatmeal The Collectors - David Baldacci.epub  ::INFO:: 422.1KB',
+        source: 'Oatmeal',
+        author: 'The Collectors',
+        title: 'David Baldacci',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        downloaded_format: 'epub',
+        size: '422.1KB'
+      }
+      #  {
+      #   line: '',
+      #   source: '',
+      #   author: '',
+      #   title: '',
+      #   book_format: '',
+      #   series: nil,
+      #   series_number: nil,
+      #   book_version: nil,
+      #   downloaded_format: '',
+      #   size: nil
+      # }
 
-    assert_equal 'Ook', book.source
-    assert_equal 'Alex Berenson', book.author
-    assert_equal 'The Prince of Beers', book.title
-    assert_equal :epub, book.book_format
-    assert_nil book.series
-    assert_equal 0, book.series_number
-    assert_equal :unknown, book.book_version
-    assert_equal 'rar', book.downloaded_format
-    assert_equal '89.36KB', book.size
+    ]
   end
 
-  def test_series_retail
-    line = '!JimBob420 Alex Berenson - [John Wells 09] - Twelve Days (retail) (epub).rar ::INFO:: 1.01MB'
-    book = Irc::Books::ResultsParser.create_book(line)
+  def test_books
+    @books.each do |book|
+      line = book[:line]
 
-    assert_equal 'JimBob420', book.source
-    assert_equal 'Alex Berenson', book.author
-    assert_equal 'Twelve Days', book.title
-    assert_equal :epub, book.book_format
-    assert_equal 'John Wells', book.series
-    assert_equal 9, book.series_number
-    assert_equal 'retail', book.book_version
-    assert_equal 'rar', book.downloaded_format
-    assert_equal '1.01MB', book.size
-  end
-
-  def test_epub_as_extension
-    # two spaces before ::INFO:: intentional
-    line = '!dragnbreaker Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub  ::INFO:: 561.8KB'
-
-    book = Irc::Books::ResultsParser.create_book(line)
-
-    assert_equal 'dragnbreaker', book.source
-    assert_equal 'Alex Berenson', book.author
-    assert_equal 'The Midnight House', book.title
-    assert_equal :epub, book.book_format
-    assert_equal 'John Wells', book.series
-    assert_equal 4, book.series_number
-    assert_equal 'v5.0', book.book_version
-    assert_equal 'epub', book.downloaded_format
-    assert_equal '561.8KB', book.size
-  end
-
-  def test_epub_as_extension_hash
-    # two spaces before ::INFO:: intentional
-    line = '!dragnbreaker Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub  ::INFO:: 561.8KB'
-
-    book_hash = Irc::Books::ResultsParser.create_hash(line)
-
-    assert_equal 'dragnbreaker', book_hash[:source]
-    assert_equal 'Alex Berenson', book_hash[:author]
-    assert_equal 'The Midnight House', book_hash[:title]
-    assert_equal :epub, book_hash[:book_format]
-    assert_equal 'John Wells', book_hash[:series]
-    assert_equal '04', book_hash[:series_number]
-    assert_equal 'v5.0', book_hash[:book_version]
-    assert_equal 'epub', book_hash[:downloaded_format]
-    assert_equal '561.8KB', book_hash[:size]
-  end
-
-  def test_3
-    line = '!DukeLupus Berenson, Alex - John Wells 02 - The Ghost War - Berenson, Alex.epub ::INFO:: 518.61KB'
-
-    book = Irc::Books::ResultsParser.create_book(line)
-
-    assert_equal 'DukeLupus', book.source
-    assert_equal 'Alex Berenson', book.author
-    assert_equal 'The Ghost War - Berenson, Alex', book.title
-    assert_equal :epub, book.book_format
-    assert_equal 'John Wells', book.series
-    assert_equal 2, book.series_number
-    assert_equal :unknown, book.book_version
-    assert_equal 'epub', book.downloaded_format
-    assert_equal '518.61KB', book.size
+      test_book = Irc::Books::ResultsParser.create_hash(line)
+      book.keys.each do |key|
+        expected_val = book[key]
+        fail_msg = [key, line].join(' - ')
+        if expected_val
+          assert_equal expected_val, test_book[key], fail_msg
+        else
+          assert_nil test_book[key], fail_msg
+        end
+      end
+    end
   end
 
   def test_parse_author

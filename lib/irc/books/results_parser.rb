@@ -8,7 +8,7 @@ module Irc
     class ResultsParser
       LABEL_REGEX = /^(.*) [\[\(](.*)[\)\]]$/.freeze
       BOOK_VERSION = ['v5.0', 'retail'].freeze
-      BOOK_FORMAT = %i[epub mobi].freeze
+      BOOK_FORMAT = %w[epub mobi].freeze
       PARSERS = [
         {
           name: 'Series Book Parser',
@@ -34,30 +34,6 @@ module Irc
         }
       ].freeze
 
-      def self.create_hash_from_match(parser, match)
-        match_array = match.to_a
-
-        book_hash = {
-          series: nil,
-          series_number: 0
-        }
-
-        match_array[parser[:author]] = ResultsParser.parse_author(match_array[parser[:author]])
-        parser.each do |key, val|
-          next if %i[regex name].include?(key)
-
-          book_hash[key] = match_array[val]
-        end
-
-        title, book_version, book_format, labels = parse_title_labels(book_hash[:title], book_hash[:author], book_hash[:downloaded_format])
-        book_hash[:title] = title
-        book_hash[:book_version] = book_version
-        book_hash[:book_format] = book_format
-        book_hash[:labels] = labels
-
-        book_hash
-      end
-
       def self.parse_author(author)
         last, first = author.split(', ')
         author = "#{first} #{last}" if first
@@ -71,59 +47,74 @@ module Irc
         author.strip
       end
 
-      def self.create_book(result)
-        book_hash = ResultsParser.create_hash(result)
-        # puts book_hash
-        Book.new(book_hash)
+      # --------------------------
+      def self.create_bh
+        {
+          line: '', source: '', author: '', title: '',
+          book_format: '', series: nil, series_number: nil,
+          book_version: nil, downloaded_format: '', size: nil,
+          labels: []
+        }
       end
 
-      def self.match_regex(result)
-        PARSERS.each do |parser|
-          result.match(parser[:regex]) do |match|
-            return parser, match
-          end
+      def self.match_or_throw(phrase, reg)
+        match = phrase.match(reg)
+        raise "cannot parse : #{phrase}" unless match
+
+        match_array = match.to_a.collect(&:strip)
+
+        match_array
+      end
+
+      def self.delete_special_labels(special_values, labels)
+        special_value = nil
+        special_values.each do |special|
+          special_value = labels.delete(special)
+          break if special_value
         end
-        raise "Error - No Parser could parse: #{result}"
+        [labels, special_value]
       end
 
-      def self.parse_title_labels(title, _author, downloaded_format)
+      def self.parse_labels_off_phrase(phrase)
         labels = []
-        book_format = :unknown
-        book_version = :unknown
-
         loop do
-          found_match = false
-
-          title.match(LABEL_REGEX) do |match|
-            title = match[1]
-            label = match[2]
-            # book_version_match = label.match(BookVersionRegex)
-            if BOOK_VERSION.include?(label)
-              book_version = label
-              # book_version = Integer(book_version_match[1])
-            elsif BOOK_FORMAT.include?(label.to_sym)
-              book_format = label.to_sym
-            else
-              labels << label
-            end
-
-            found_match = true
-            title.strip!
+          begin
+            _orig, phrase, label = match_or_throw(phrase, /(.*)[\[\(](.*)[\)\]]/)
+            labels << label
+          rescue StandardError => _e
+            break
           end
-          break unless found_match == true
         end
-
-        if BOOK_FORMAT.include?(downloaded_format.to_sym)
-          book_format = downloaded_format.to_sym if book_format == :unknown
-        end
-
-        [title, book_version, book_format, labels]
+        [phrase, labels]
       end
 
       def self.create_hash(result)
-        parser, match = match_regex(result)
+        book_hash = create_bh
+        book_hash[:line], book_hash[:source], remainder = match_or_throw(result, /^!(\S*)\s+(.*)/)
 
-        create_hash_from_match(parser, match)
+        remainder, book_hash[:size] = remainder.split('::INFO::').collect(&:strip)
+        parts = remainder.split(' - ').collect(&:strip)
+        _orig, parts[-1], book_hash[:downloaded_format] = match_or_throw(parts[-1], /(.*)\.(.*)/)
+
+        parts[-1], labels = parse_labels_off_phrase(parts[-1])
+
+        labels, book_hash[:book_version] = delete_special_labels(BOOK_VERSION, labels)
+        labels, book_hash[:book_format] = delete_special_labels(BOOK_FORMAT, labels)
+        unless book_hash[:book_format]
+          book_hash[:book_format] = book_hash[:downloaded_format]
+        end
+        book_hash[:labels] = labels
+
+        if parts.size > 2
+          series_name_number = parts.delete_at(1)
+          _orig, book_hash[:series], book_hash[:series_number] = match_or_throw(series_name_number, /\[?(.*) (\d+)\]?/)
+          # parts.pop if parts.size > 2
+        end
+
+        book_hash[:author] = parse_author(parts[0])
+        book_hash[:title] = parts[1]
+
+        book_hash
       end
     end
   end
