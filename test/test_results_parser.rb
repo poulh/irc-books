@@ -51,6 +51,23 @@ class ResultParserTest < Minitest::Test
     assert_equal '561.8KB', book.size
   end
 
+  def test_epub_as_extension_hash
+    # two spaces before ::INFO:: intentional
+    line = '!dragnbreaker Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub  ::INFO:: 561.8KB'
+
+    book_hash = Irc::Books::ResultsParser.create_hash(line)
+
+    assert_equal 'dragnbreaker', book_hash[:source]
+    assert_equal 'Alex Berenson', book_hash[:author]
+    assert_equal 'The Midnight House', book_hash[:title]
+    assert_equal :epub, book_hash[:book_format]
+    assert_equal 'John Wells', book_hash[:series]
+    assert_equal '04', book_hash[:series_number]
+    assert_equal 'v5.0', book_hash[:book_version]
+    assert_equal 'epub', book_hash[:downloaded_format]
+    assert_equal '561.8KB', book_hash[:size]
+  end
+
   def test_3
     line = '!DukeLupus Berenson, Alex - John Wells 02 - The Ghost War - Berenson, Alex.epub ::INFO:: 518.61KB'
 
