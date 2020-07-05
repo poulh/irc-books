@@ -6,6 +6,7 @@ require 'cinch/helpers'
 require 'irc/books/chooser'
 require 'irc/books/msg_parser'
 require 'irc/books/search_model'
+require 'irc/books/results_parser'
 
 module Irc
   module Books
@@ -20,12 +21,12 @@ module Irc
 
       def main_menu_on_join
         @chooser.notify_wait_on_join
-        
-        chooser_main_menu(wait_time=@search_model.wait_time, beep=true)
+
+        chooser_main_menu(wait_time = @search_model.wait_time, beep = true)
       end
 
-      def chooser_main_menu(wait_time=0, beep=false)
-        on_next(wait_time=wait_time) do
+      def chooser_main_menu(wait_time = 0, beep = false)
+        on_next(wait_time = wait_time) do
           @chooser.check_initialized
           @chooser.beep if beep
           @chooser.main_menu
@@ -89,6 +90,7 @@ module Irc
         phrase = Regexp.escape(command[:title])
         regex_accepted = "^.*accepted.*#{phrase}.*$"
 
+        @bot.loggers.info "registering download accepted: #{regex_accepted}"
         handler = @bot.on :private, /#{regex_accepted}/i, self do |_msg, context|
           context.chooser.notify_download_request_in_progress(phrase: command[:title])
 
@@ -102,14 +104,17 @@ module Irc
       def init_on_download_book_file(command)
         phrase = Regexp.escape(command[:title])
         regex_book_file = "^.*#{phrase}.*$"
-
+        @bot.loggers.info "regex book download file: #{regex_book_file}"
         handler = @bot.on :dcc_send, /#{regex_book_file}/i, self do |_msg, context, dcc|
           filename, file = Irc::Books::MsgParser.parse_and_accept_file(dcc)
 
           context.on_next do
             context_model = context.search_model
+
             new_path = File.join(context_model.download_path, filename)
-            FileUtils.mv(file.path, new_path, verbose: false)
+
+            FileUtils.mkdir_p(context_model.download_path, verbose: true)
+            FileUtils.mv(file.path, new_path, verbose: true)
             context_model.downloads << new_path
 
             context.chooser.notify_book_downloaded(phrase: new_path)
@@ -204,15 +209,15 @@ module Irc
         end
       end
 
-      INFO_REGEX = '::INFO::'
-
       def parse_search_results(file)
-        books = Hash.new { |hash, key| hash[key] = [] }
+        books = []
         Context.unzip_readlines(file) do |result|
-          next unless (result =~ /^!.*/) && (result =~ /#{INFO_REGEX}/)
-
-          owner, title = result[0, result.index(INFO_REGEX)].strip.split(' ', 2)
-          books[title] << owner
+          begin
+            book_hash = Irc::Books::ResultsParser.create_hash(result)
+            books << book_hash
+          rescue Irc::Books::ResultParserError => e
+            # @bot.loggers.warn("#{e} - #{result}")
+          end
         end
         books
       end
@@ -225,14 +230,6 @@ module Irc
         init_chooser_on_choice
 
         init_parse_search_bots_on_join
-
-        # @bot.on :message do |msg|
-        #   puts "msg: #{msg.message}"
-        # end
-
-        # @bot.on :private do |msg|
-        #   puts "prv: #{msg.message}"
-        # end
       end
 
       def on_next(wait_time = 1)
@@ -244,6 +241,7 @@ module Irc
       def send_text_to_channel(channel, text)
         on_next do
           sanitized = Sanitize(text)
+          @bot.loggers.info "sending text to channel: #{sanitized}"
           Channel(channel).send(sanitized)
         end
       end

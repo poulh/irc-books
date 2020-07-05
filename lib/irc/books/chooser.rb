@@ -153,31 +153,11 @@ module Irc
 
           main_menu_choice(book_menu)
 
-          if preferred_downloader
-            book_menu.choice('See results from all downloaders') do
-              choose_books(search, nil)
-            end
-          end
-
-          books.keys.sort.each do |title|
-            downloaders = books[title]
-            downloaders.each do |downloader|
-              if preferred_downloader && (downloader != preferred_downloader)
-                next
-              end
-
-              the_choice = [downloader, title].join(' ')
-              book_menu.choice(the_choice) do
-                yield_choice(command: DOWNLOAD, download_bot: downloader, title: title, phrase: the_choice)
-                if downloader != @preferred_downloader
-                  answer = @cli.ask("Make #{downloader} your preferred downloader? (y/n)")
-                  if answer.downcase[0] == 'y'
-                    @preferred_downloader = downloader
-                  end
-                  preferred_downloader = @preferred_downloader
-                end
-                choose_books(search, preferred_downloader)
-              end
+          books.each do |book|
+            the_choice = [book[:source], book[:author], book[:title], "\n", book[:line]].join(' - ')
+            book_menu.choice(the_choice) do
+              yield_choice(command: DOWNLOAD, download_bot: book[:source], title: book[:filename], phrase: book[:line])
+              choose_books(search, preferred_downloader)
             end
           end
         end
@@ -190,8 +170,8 @@ module Irc
           main_menu_choice(results_menu)
 
           @search_model.search_results.each do |search, results|
-            results_menu.choice("#{search[:phrase]} (#{results.keys.size})") do
-              choose_default_downloader unless @preferred_downloader
+            results_menu.choice("#{search[:phrase]} (#{results.size})") do
+              # choose_default_downloader unless @preferred_downloader
               choose_books(search, @preferred_downloader)
             end
           end

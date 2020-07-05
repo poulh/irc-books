@@ -15,6 +15,7 @@ class ResultParserTest < Minitest::Test
         series: nil,
         series_number: nil,
         book_version: nil,
+        filename: 'Alex Berenson - The Prince of Beers (epub).rar',
         downloaded_format: 'rar',
         size: '89.36KB'
       },
@@ -27,6 +28,7 @@ class ResultParserTest < Minitest::Test
         series: 'John Wells',
         series_number: '09',
         book_version: 'retail',
+        filename: 'Alex Berenson - [John Wells 09] - Twelve Days (retail) (epub).rar',
         downloaded_format: 'rar',
         size: '1.01MB'
       },
@@ -39,6 +41,7 @@ class ResultParserTest < Minitest::Test
         series: 'John Wells',
         series_number: '04',
         book_version: 'v5.0',
+        filename: 'Berenson, Alex - John Wells 04 - The Midnight House (v5.0).epub',
         downloaded_format: 'epub',
         size: '561.8KB'
       },
@@ -51,6 +54,7 @@ class ResultParserTest < Minitest::Test
         series: 'John Wells',
         series_number: '02',
         book_version: nil,
+        filename: 'Berenson, Alex - John Wells 02 - The Ghost War - Berenson, Alex.epub',
         downloaded_format: 'epub',
         size: '518.61KB'
       },
@@ -63,6 +67,7 @@ class ResultParserTest < Minitest::Test
         series: nil,
         series_number: nil,
         book_version: nil,
+        filename: 'Deliver Us from Evil - David Baldacci(epub).rar',
         downloaded_format: 'rar',
         size: nil
       }, {
@@ -74,6 +79,7 @@ class ResultParserTest < Minitest::Test
         series: 'Camel Club',
         series_number: '03',
         book_version: 'v5.0',
+        filename: 'David Baldacci - [Camel Club 03] - Stone Cold (v5.0) (epub).rar',
         downloaded_format: 'rar',
         size: nil
       }, {
@@ -85,6 +91,7 @@ class ResultParserTest < Minitest::Test
         series: 'Atlee Pine',
         series_number: '02',
         book_version: 'retail',
+        filename: 'David Baldacci - [Atlee Pine 02] - A Minute to Midnight  (retail) (epub).rar',
         downloaded_format: 'rar',
         size: nil
       }, {
@@ -96,6 +103,7 @@ class ResultParserTest < Minitest::Test
         series: 'Amos Decker',
         series_number: '06',
         book_version: nil,
+        filename: 'David Baldacci - [Amos Decker 06] - Walk the Wire (US) (epub).rar',
         downloaded_format: 'rar',
         size: '698.2KB',
         labels: ['US']
@@ -108,6 +116,7 @@ class ResultParserTest < Minitest::Test
         series: nil,
         series_number: nil,
         book_version: nil,
+        filename: 'The Collectors - David Baldacci.epub',
         downloaded_format: 'epub',
         size: '422.1KB'
       },
@@ -120,6 +129,7 @@ class ResultParserTest < Minitest::Test
         series: nil,
         series_number: nil,
         book_version: nil,
+        filename: 'Baldacci, David - No Time Left - Baldacci, David.epub',
         downloaded_format: 'epub',
         size: '174.9KB'
       },
@@ -132,6 +142,7 @@ class ResultParserTest < Minitest::Test
         series: 'Freddy and the French Fries',
         series_number: '',
         book_version: nil,
+        filename: 'David Baldacci - Freddy and the French Fries - The Mystery of Silas Finklebean (epub).rar',
         downloaded_format: 'rar',
         size: '1.9MB'
 

@@ -4,6 +4,8 @@ require 'irc/books/book'
 
 module Irc
   module Books
+    class ResultParserError < StandardError
+    end
     # parse incoming irc msgs for meaningful values
     class ResultsParser
       LABEL_REGEX = /^(.*) [\[\(](.*)[\)\]]$/.freeze
@@ -53,13 +55,13 @@ module Irc
           line: '', source: '', author: '', title: '',
           book_format: '', series: nil, series_number: nil,
           book_version: nil, downloaded_format: '', size: nil,
-          labels: []
+          filename: '', labels: []
         }
       end
 
       def self.match_or_throw(phrase, hint, reg)
         match = phrase.match(reg)
-        raise "cannot parse #{hint}: #{phrase}" unless match
+        raise ResultParserError, "cannot parse #{hint}: #{phrase}" unless match
 
         match_array = match.to_a.collect { |m| m&.strip }
 
@@ -93,6 +95,8 @@ module Irc
         book_hash[:line], book_hash[:source], remainder = match_or_throw(result, :source, /^!(\S*)\s+(.*)/)
 
         remainder, book_hash[:size] = remainder.split('::INFO::').collect(&:strip)
+        book_hash[:filename] = remainder
+
         parts = remainder.split(' - ').collect(&:strip)
         _orig, parts[-1], book_hash[:downloaded_format] = match_or_throw(parts[-1], :downloaded_format, /(.*)\.(.*)/)
 
