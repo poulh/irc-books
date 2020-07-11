@@ -15,7 +15,17 @@ end
 
 task :install do
   # task code ...
-  system('sudo gem uninstall irc-books && rm *.gem &&  gem build *.gemspec &&  rake test && sudo gem install *.gem && irc-books')
+  # Run Rake Test
+  # Uninstall old gem versions
+  # delete old gem files in dev directory
+  # build new gem from gemspec
+  # install new gem
+  # run irc-books
+  tasks = ['rake test', 'sudo gem uninstall irc-books',
+           'rm *.gem', 'gem build *.gemspec',
+           'sudo gem install *.gem', 'irc-books']
+  cmd = tasks.join(' && ')
+  system(cmd)
 end
 
 desc 'Run tests'

@@ -2,6 +2,8 @@
 
 require 'irc/books/search_model'
 require 'irc/books/questions'
+require 'irc/books/book_sorter'
+require 'irc/books/menu_loop'
 # class for choosing menus
 
 module Irc
@@ -52,80 +54,82 @@ module Irc
       end
 
       def choose_preferences
-        @cli.choose do |pref_menu|
-          pref_menu.prompt = 'Select Preferences to change'
+        Irc::Books::MenuLoop.new do |ml|
+          @cli.choose do |pref_menu|
+            pref_menu.prompt = 'Select Preferences to change'
 
-          main_menu_choice(pref_menu)
+            ml.go_back_choice(pref_menu, 'Main Menu')
 
-          pref_menu.choice("Choose Default Search Bot (#{@search_model.search_bot})") do
-            choose_default_search_bot
-          end
-
-          pref_menu.choice("Change Search Suffix (#{@search_model.search_suffix})") do
-            choose_default_search_suffix
-          end
-
-          pref_menu.choice("Change Download Path (#{@search_model.download_path})") do
-            @search_model.download_path = @cli.ask(Question.download_path)
-          end
-
-          unless @downloaders.empty?
-            pref_downloader = @preferred_downloader ? " (#{@preferred_downloader})" : ''
-            pref_menu.choice("Change Default Downloader#{pref_downloader}") do
-              choose_default_downloader
+            pref_menu.choice("Choose Default Search Bot (#{@search_model.search_bot})") do
+              choose_default_search_bot
             end
-          end
-        end
-      end
 
-      def main_menu
-        @cli.choose do |main_menu|
-          main_menu.prompt = 'What do you want to do?'
+            pref_menu.choice("Change Search Suffix (#{@search_model.search_suffix})") do
+              choose_default_search_suffix
+            end
 
-          main_menu.choice('Search For Books') do
-            search_for_books
-            @callbacks[:main_menu].call
-          end
+            pref_menu.choice("Change Download Path (#{@search_model.download_path})") do
+              @search_model.download_path = @cli.ask(Question.download_path)
+            end
 
-          unless @search_model.searches.empty?
-            main_menu.choice("Active Searches (#{@search_model.searches.size})") do
-              @search_model.searches.each do |_search_bot, bot_searches|
-                bot_searches.each do |_cleaned_search, search|
-                  puts "#{search[:search_bot]} #{search[:status]} - #{search[:phrase]}"
-                  @callbacks[:main_menu].call
-                end
+            unless @downloaders.empty?
+              pref_downloader = @preferred_downloader ? " (#{@preferred_downloader})" : ''
+              pref_menu.choice("Change Default Downloader#{pref_downloader}") do
+                choose_default_downloader
               end
             end
           end
+        end # end loop
+      end
 
-          unless @search_model.search_results.empty?
-            main_menu.choice("Search Results (#{@search_model.search_results.size})") do
-              choose_results
+      def main_menu
+        Irc::Books::MenuLoop.new do |_ml|
+          @cli.choose do |main_menu|
+            main_menu.prompt = 'What do you want to do?'
+
+            main_menu.choice('Search For Books') do
+              search_for_books
             end
-          end
 
-          unless @search_model.downloads.empty?
-            main_menu.choice("View Downloads (#{@search_model.downloads.size})") do
-              puts @search_model.downloads.join("\n")
-              @callbacks[:main_menu].call
+            unless @search_model.searches.empty?
+              main_menu.choice("Active Searches (#{@search_model.searches.size})") do
+                @search_model.searches.each do |_search_bot, bot_searches|
+                  bot_searches.each do |_cleaned_search, search|
+                    puts "#{search[:search_bot]} #{search[:status]} - #{search[:phrase]}"
+                  end
+                end
+              end
             end
-          end
 
-          main_menu.choice('Preferences') do
-            choose_preferences
-          end
+            unless @search_model.search_results.empty?
+              main_menu.choice("Search Results (#{@search_model.search_results.size})") do
+                choose_search_results
+              end
+            end
 
-          main_menu_choice(main_menu, choice_name = 'Refresh')
+            unless @search_model.downloads.empty?
+              main_menu.choice("View Downloads (#{@search_model.downloads.size})") do
+                puts @search_model.downloads.join("\n")
+              end
+            end
 
-          main_menu.choice('Quit') do
-            do_quit
+            main_menu.choice('Preferences') do
+              choose_preferences
+            end
+
+            refresh = 'Refresh'
+            main_menu.choice(refresh)
+            main_menu.default = refresh
+
+            main_menu.choice('Quit') do
+              do_quit
+            end
           end
         end
       end
 
       def main_menu_choice(menu, choice_name = 'Main Menu')
         menu.choice(choice_name) do
-          @callbacks[:main_menu].call
         end
         menu.default = choice_name
       end
@@ -144,26 +148,25 @@ module Irc
         end
       end
 
-      def choose_books(search, preferred_downloader)
+      def choose_books(search, _preferred_downloader)
         return unless @search_model.search_results.key?(search)
 
-        books = @search_model.search_results[search]
-        @cli.choose do |book_menu|
-          book_menu.prompt = 'Which book would you like to download?'
+        Irc::Books::MenuLoop.new do |ml|
+          @cli.choose do |book_menu|
+            book_menu.prompt = 'Which book would you like to download?'
+            ml.go_back_choice(book_menu, 'Main Menu')
 
-          main_menu_choice(book_menu)
-
-          books.each do |book|
-            the_choice = [book[:source], book[:author], book[:title], "\n", book[:line]].join(' - ')
-            book_menu.choice(the_choice) do
-              yield_choice(command: DOWNLOAD, download_bot: book[:source], title: book[:filename], phrase: book[:line])
-              choose_books(search, preferred_downloader)
+            books = @search_model.search_results[search]
+            Irc::Books::BookSorter.display_each_book(books) do |book_display_name, book|
+              book_menu.choice(book_display_name) do
+                yield_choice(command: DOWNLOAD, download_bot: book[:source], title: book[:filename], phrase: book[:line])
+              end
             end
           end
         end
       end
 
-      def choose_results
+      def choose_search_results
         @cli.choose do |results_menu|
           results_menu.prompt = 'Which search results would you like to view?'
 
@@ -243,12 +246,14 @@ module Irc
       end
 
       def search_for_books
-        title = @cli.ask('What books would you like to search for? (Press <Return> for Main Menu)')
-        case title.downcase
-        when ''
-          @callbacks[:main_menu].call
-        else
-          yield_choice(command: SEARCH, phrase: title)
+        Irc::Books::MenuLoop.new do |ml|
+          title = @cli.ask('What books would you like to search for? (Press <Return> for Main Menu)')
+          case title.downcase
+          when ''
+            ml.go_back
+          else
+            yield_choice(command: SEARCH, phrase: title)
+          end
         end
       end
     end

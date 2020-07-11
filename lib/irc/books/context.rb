@@ -216,7 +216,9 @@ module Irc
             book_hash = Irc::Books::ResultsParser.create_hash(result)
             books << book_hash
           rescue Irc::Books::ResultParserError => e
-            # @bot.loggers.warn("#{e} - #{result}")
+            @bot.loggers.warn("#{e} - #{result}")
+          rescue StandardError => e
+            @bot.loggers.warn("#{e} - #{result}")
           end
         end
         books
