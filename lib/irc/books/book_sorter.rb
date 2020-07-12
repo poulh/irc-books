@@ -11,11 +11,11 @@ module Irc
         book_groups = group_books_by(books, DEFAULT_GROUP_BY)
         sort_book_groups!(book_groups)
 
-        book_keys = book_groups.keys.sort # { |a, b| a[:display] <=> b[:display] }
+        book_keys = book_groups.keys.sort
         book_keys.each do |book_key|
           books_in_group = book_groups[book_key]
           top_book = books_in_group[0]
-          yield("#{book_key} ---> #{top_book[:line]}", top_book)
+          yield("#{book_key} ---> #{top_book[:book_version]} ---> #{top_book[:line]}", top_book)
         end
       end
 
@@ -44,7 +44,7 @@ module Irc
       end
 
       def self.book_version_sort(book)
-        bv = book[:version] || 'v0.0'
+        bv = book[:book_version] || 'v0.0'
         bv = 'v6.0' if bv.downcase == 'retail'
         bv
       end
@@ -55,7 +55,7 @@ module Irc
           series_num = book[:series_number] || '?'
           series = "#{book[:series]} (#{series_num}) - "
         end
-        "#{book[:author]} <-> #{series} <-> #{book[:title]} <-> #{book[:version]}"
+        "#{book[:author]} <-> #{series} <-> #{book[:title]}"
       end
     end
   end

@@ -8,8 +8,11 @@ module Irc
     end
     # parse incoming irc msgs for meaningful values
     class ResultsParser
-      LABEL_REGEX = /^(.*) [\[\(](.*)[\)\]]$/.freeze
-      BOOK_VERSION = ['v5.0', 'retail'].freeze
+      LABEL_REGEX_OLD = /^(.*) [\[\(](.*)[\)\]]$/.freeze
+      LABEL_REGEX = /(.*)[\[\(](.*)[\)\]]/.freeze
+      BOOK_VERSION = ['v5.0', 'v4.0', 'retail'].freeze
+      SERIES_REGEX = /\[?([a-zA-Z\s&]+)\s?(\d*)\]?/.freeze
+      PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s&]+)\s?(\d*)\]/.freeze # \d+\.?\d*
       BOOK_FORMAT = %w[epub mobi].freeze
       PARSERS = [
         {
@@ -71,7 +74,13 @@ module Irc
       def self.delete_special_labels(special_values, labels)
         special_value = nil
         special_values.each do |special|
-          special_value = labels.delete(special)
+          idx = labels.find_index { |i| i.downcase == special.downcase }
+          unless idx.nil?
+
+            labels.delete_at(idx)
+            special_value = special
+          end
+
           break if special_value
         end
         [labels, special_value]
@@ -81,8 +90,9 @@ module Irc
         labels = []
         loop do
           begin
-            _orig, phrase, label = match_or_throw(phrase, :labels, /(.*)[\[\(](.*)[\)\]]/)
-            labels << label
+            _orig, phrase, label = match_or_throw(phrase, :labels, LABEL_REGEX)
+            label = label.split(',').collect(&:strip)
+            labels += label
           rescue StandardError => _e
             break
           end
@@ -113,8 +123,14 @@ module Irc
 
         if parts.size > 2
           series_name_number = parts.delete_at(1)
-          _orig, book_hash[:series], book_hash[:series_number] = match_or_throw(series_name_number, :series, /\[?([a-zA-Z\s]+)\s?(\d*)\]?/)
+          _orig, book_hash[:series], book_hash[:series_number] = match_or_throw(series_name_number, :series, SERIES_REGEX)
           # parts.pop if parts.size > 2
+        else
+          begin
+            _orig, parts[0], book_hash[:series], book_hash[:series_number] = match_or_throw(parts[0], :series, PHRASE_SERIES_REGEX)
+          rescue StandardError => e
+          end
+
         end
 
         book_hash[:author] = parse_author(parts[0])

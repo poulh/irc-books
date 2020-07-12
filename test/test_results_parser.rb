@@ -145,7 +145,87 @@ class ResultParserTest < Minitest::Test
         filename: 'David Baldacci - Freddy and the French Fries - The Mystery of Silas Finklebean (epub).rar',
         downloaded_format: 'rar',
         size: '1.9MB'
+      },
+      {
+        line: '!Oatmeal David Baldacci - [Sean King & Michelle Maxwell 01] - Split Second (v4.0) (epub, prc).rar  ::INFO:: 871.8KB',
+        source: 'Oatmeal',
+        author: 'David Baldacci',
+        title: 'Split Second',
+        book_format: 'epub',
+        series: 'Sean King & Michelle Maxwell',
+        series_number: '01',
+        book_version: 'v4.0',
+        filename: 'David Baldacci - [Sean King & Michelle Maxwell 01] - Split Second (v4.0) (epub, prc).rar',
+        downloaded_format: 'rar',
+        size: '871.8KB'
+      },
+      {
+        line: '!MusicWench David Baldacci [Camel Club 04] - Divine Justice [Epub].rar  ::INFO:: 376.2KB',
+        source: 'MusicWench',
+        author: 'David Baldacci',
+        title: 'Divine Justice',
+        book_format: 'epub',
+        series: 'Camel Club',
+        series_number: '04',
+        book_version: nil,
+        filename: 'David Baldacci [Camel Club 04] - Divine Justice [Epub].rar',
+        downloaded_format: 'rar',
+        size: '376.2KB'
+      }
+      # {
+      #   line: '!DV8 David Baldacci - Bullseye ( (EPUB).rar ::INFO:: 228.2KB',
+      #   source: 'DV8',
+      #   author: 'David Baldacci',
+      #   title: 'Bullseye',
+      #   book_format: 'epub',
+      #   series: nil,
+      #   series_number: nil,
+      #   book_version: nil,
+      #   filename: 'Bullseye ( (EPUB).rar',
+      #   downloaded_format: 'rar',
+      #   size: '228.2KB'
+      # },
+      # {
+      #   line: '!MusicWench David Baldacci [Camel Club 05.5 - Will Robie 02.5] - Bullseye (epub).epub  ::INFO:: 141.8KB',
+      #   source: 'MusicWench',
+      #   author: 'David Baldacci',
+      #   title: 'Bullseye',
+      #   book_format: 'epub',
+      #   series: 'Camel Club',
+      #   series_number: '05.5',
+      #   book_version: nil,
+      #   filename: 'Bullseye ( (EPUB).rar',
+      #   downloaded_format: 'epub',
+      #   size: '141.8KB'
+      # }
 
+    ]
+
+    @phrases_with_labels = [
+      {
+        original: 'foo (bar)',
+        phrase: 'foo',
+        labels: ['bar']
+      }, {
+        original: ' foo ( bar)',
+        phrase: 'foo',
+        labels: ['bar']
+      }, {
+        original: 'foo (bar,baz)',
+        phrase: 'foo',
+        labels: %w[bar baz]
+      }, {
+        original: 'foo (bar, baz)',
+        phrase: 'foo',
+        labels: %w[bar baz]
+      }, {
+        original: ' foo [ bar, baz]',
+        phrase: 'foo',
+        labels: %w[bar baz]
+      }, {
+        original: 'Split Second (v4.0) (epub, prc)',
+        phrase: 'Split Second',
+        labels: %w[v4.0 epub prc]
       }
 
     ]
@@ -180,5 +260,13 @@ class ResultParserTest < Minitest::Test
 
     assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser.parse_author('Jim Middlename Smith')
     assert_equal 'Jim Middlename Smith', Irc::Books::ResultsParser.parse_author('Smith, Jim Middlename')
+  end
+
+  def test_parse_labels_off_phrase
+    @phrases_with_labels.each do |phrase_with_label|
+      phrase, labels = Irc::Books::ResultsParser.parse_labels_off_phrase(phrase_with_label[:original])
+      assert_equal phrase_with_label[:phrase], phrase, phrase_with_label[:original]
+      assert_equal phrase_with_label[:labels].sort, labels.sort, phrase_with_label[:original]
+    end
   end
 end
