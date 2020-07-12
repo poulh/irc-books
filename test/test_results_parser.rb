@@ -171,7 +171,21 @@ class ResultParserTest < Minitest::Test
         filename: 'David Baldacci [Camel Club 04] - Divine Justice [Epub].rar',
         downloaded_format: 'rar',
         size: '376.2KB'
+      },
+      {
+        line: '!dragnbreaker Grippando, James - Jack Swyteck 13.5 - Operation Northwoods (retail).epub  ::INFO:: 276.9KB',
+        source: 'dragnbreaker',
+        author: 'James Grippando',
+        title: 'Operation Northwoods',
+        book_format: 'epub',
+        series: 'Jack Swyteck',
+        series_number: '13.5',
+        book_version: 'retail',
+        filename: 'Grippando, James - Jack Swyteck 13.5 - Operation Northwoods (retail).epub',
+        downloaded_format: 'epub',
+        size: '276.9KB'
       }
+
       # {
       #   line: '!DV8 David Baldacci - Bullseye ( (EPUB).rar ::INFO:: 228.2KB',
       #   source: 'DV8',
