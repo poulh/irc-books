@@ -9,6 +9,7 @@ module Irc
     # parse incoming irc msgs for meaningful values
     class ResultsParser
       LABEL_REGEX_OLD = /^(.*) [\[\(](.*)[\)\]]$/.freeze
+      DOUBLE_PAREN_LABEL_REGEX = /(.*)\( \((.*)\)/.freeze
       LABEL_REGEX = /(.*)[\[\(](.*)[\)\]]/.freeze
       BOOK_VERSION = ['v5.0', 'v4.0', 'retail'].freeze
       NUMBER_OPTIONAL_DECIMAL_REGEX = /\d+(\.\d+)?/.freeze
@@ -89,13 +90,15 @@ module Irc
 
       def self.parse_labels_off_phrase(phrase)
         labels = []
-        loop do
-          begin
-            _orig, phrase, label = match_or_throw(phrase, :labels, LABEL_REGEX)
-            label = label.split(',').collect(&:strip)
-            labels += label
-          rescue StandardError => _e
-            break
+        [DOUBLE_PAREN_LABEL_REGEX, LABEL_REGEX].each do |regex|
+          loop do
+            begin
+              _orig, phrase, label = match_or_throw(phrase, :labels, regex)
+              label = label.split(',').collect(&:strip)
+              labels += label
+            rescue StandardError => e
+              break
+            end
           end
         end
         [phrase, labels]

@@ -184,21 +184,20 @@ class ResultParserTest < Minitest::Test
         filename: 'Grippando, James - Jack Swyteck 13.5 - Operation Northwoods (retail).epub',
         downloaded_format: 'epub',
         size: '276.9KB'
+      },
+      {
+        line: '!DV8 David Baldacci - Bullseye ( (EPUB).rar ::INFO:: 228.2KB',
+        source: 'DV8',
+        author: 'David Baldacci',
+        title: 'Bullseye',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        filename: 'David Baldacci - Bullseye ( (EPUB).rar',
+        downloaded_format: 'rar',
+        size: '228.2KB'
       }
-
-      # {
-      #   line: '!DV8 David Baldacci - Bullseye ( (EPUB).rar ::INFO:: 228.2KB',
-      #   source: 'DV8',
-      #   author: 'David Baldacci',
-      #   title: 'Bullseye',
-      #   book_format: 'epub',
-      #   series: nil,
-      #   series_number: nil,
-      #   book_version: nil,
-      #   filename: 'Bullseye ( (EPUB).rar',
-      #   downloaded_format: 'rar',
-      #   size: '228.2KB'
-      # },
       # {
       #   line: '!MusicWench David Baldacci [Camel Club 05.5 - Will Robie 02.5] - Bullseye (epub).epub  ::INFO:: 141.8KB',
       #   source: 'MusicWench',
