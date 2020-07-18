@@ -140,7 +140,7 @@ class ResultParserTest < Minitest::Test
         title: 'The Mystery of Silas Finklebean',
         book_format: 'epub',
         series: 'Freddy and the French Fries',
-        series_number: '',
+        series_number: nil,
         book_version: nil,
         filename: 'David Baldacci - Freddy and the French Fries - The Mystery of Silas Finklebean (epub).rar',
         downloaded_format: 'rar',

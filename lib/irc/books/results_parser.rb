@@ -11,9 +11,9 @@ module Irc
       LABEL_REGEX_OLD = /^(.*) [\[\(](.*)[\)\]]$/.freeze
       LABEL_REGEX = /(.*)[\[\(](.*)[\)\]]/.freeze
       BOOK_VERSION = ['v5.0', 'v4.0', 'retail'].freeze
-      SERIES_REGEX = /\[?([a-zA-Z\s&]+)\s?(\d*)\]?/.freeze
-      # PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s&]+)\s?(\d*)\]/.freeze # \d+\.?\d*
-      PHRASE_SERIES_REGEX = /([A-Za-z&\s]+)(\d{0,3}\.?\d{0,3})/.freeze
+      NUMBER_OPTIONAL_DECIMAL_REGEX = /\d+(\.\d+)?/.freeze
+      SERIES_REGEX = /\[?([a-zA-Z\s&]+)\s?(\d+(\.\d+)?)?\]?/.freeze
+      PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s&]+)\s?(\d+(\.\d+)?)\]/.freeze # \d+\.?\d*
       BOOK_FORMAT = %w[epub mobi].freeze
       PARSERS = [
         {
@@ -68,7 +68,7 @@ module Irc
         raise ResultParserError, "cannot parse #{hint}: #{phrase}" unless match
 
         match_array = match.to_a.collect { |m| m&.strip }
-        match_array = match_array.collect { |m| m.empty? ? nil : m }
+        match_array = match_array.collect { |m| m&.empty? ? nil : m }
         match_array
       end
 
