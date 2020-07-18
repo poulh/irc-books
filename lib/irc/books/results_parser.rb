@@ -14,7 +14,7 @@ module Irc
       BOOK_VERSION = ['v5.0', 'v4.0', 'retail'].freeze
       NUMBER_OPTIONAL_DECIMAL_REGEX = /\d+(\.\d+)?/.freeze
       SERIES_REGEX = /\[?([a-zA-Z\s&]+)\s?(\d+(\.\d+)?)?\]?/.freeze
-      PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s&]+)\s?(\d+(\.\d+)?)\]/.freeze # \d+\.?\d*
+      PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s\-&]+)\s?(\d+(\.\d+)?)\]/.freeze # \d+\.?\d*
       BOOK_FORMAT = %w[epub mobi].freeze
       PARSERS = [
         {

@@ -197,7 +197,21 @@ class ResultParserTest < Minitest::Test
         filename: 'David Baldacci - Bullseye ( (EPUB).rar',
         downloaded_format: 'rar',
         size: '228.2KB'
+      },
+      {
+        line: '!MusicWench Tom Clancy [Op-Center 07] - Diviser pour regner.epub  ::INFO:: 378.1KB',
+        source: 'MusicWench',
+        author: 'Tom Clancy',
+        title: 'Diviser pour regner',
+        book_format: 'epub',
+        series: 'Op-Center',
+        series_number: '07',
+        book_version: nil,
+        filename: 'Tom Clancy [Op-Center 07] - Diviser pour regner.epub',
+        downloaded_format: 'epub',
+        size: '378.1KB'
       }
+
       # {
       #   line: '!MusicWench David Baldacci [Camel Club 05.5 - Will Robie 02.5] - Bullseye (epub).epub  ::INFO:: 141.8KB',
       #   source: 'MusicWench',
