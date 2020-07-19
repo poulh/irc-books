@@ -108,6 +108,7 @@ module Irc
         book_hash = create_bh
         book_hash[:line], book_hash[:source], remainder = match_or_throw(result, :source, /^!(\S*)\s+(.*)/)
 
+        remainder = remainder.gsub(/-{2,}/, '::INFO::')
         remainder, book_hash[:size] = remainder.split('::INFO::').collect(&:strip)
         book_hash[:filename] = remainder
 

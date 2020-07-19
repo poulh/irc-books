@@ -271,6 +271,36 @@ class ResultParserTest < Minitest::Test
         size: nil,
         labels: [],
         country: nil
+      },
+      {
+        line: '!QuietSilence Clancy, Tom - Net Force Explorers 06 - Cyberspy.epub     --------------------- 152.78 KB',
+        source: 'QuietSilence',
+        author: 'Tom Clancy',
+        title: 'Cyberspy',
+        book_format: 'epub',
+        series: 'Net Force Explorers',
+        series_number: '06',
+        book_version: nil,
+        filename: 'Clancy, Tom - Net Force Explorers 06 - Cyberspy.epub',
+        downloaded_format: 'epub',
+        size: '152.78 KB',
+        labels: [],
+        country: nil
+      },
+      {
+        line: '!QuietSilence Baldacci, David - One Good Deed.epub     ------------------------------------- 655.68 KB',
+        source: 'QuietSilence',
+        author: 'David Baldacci',
+        title: 'One Good Deed',
+        book_format: 'epub',
+        series: nil,
+        series_number: nil,
+        book_version: nil,
+        filename: 'Baldacci, David - One Good Deed.epub',
+        downloaded_format: 'epub',
+        size: '655.68 KB',
+        labels: [],
+        country: nil
       }
 
     ]
