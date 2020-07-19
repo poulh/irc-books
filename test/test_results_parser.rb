@@ -301,8 +301,39 @@ class ResultParserTest < Minitest::Test
         size: '655.68 KB',
         labels: [],
         country: nil
+      },
+      {
+        line: '!shytot Tom Clancy, Steve Pieczenik - [Op-Center 16] - Dark Zone - Jeff Rovin, George Galdorisi (retail) (epub).epub  ::INFO:: 2.0MB',
+        source: 'shytot',
+        author: 'Steve Pieczenik Tom Clancy',
+        title: 'Dark Zone',
+        book_format: 'epub',
+        series: 'Op-Center',
+        series_number: '16',
+        book_version: 'retail',
+        filename: 'Tom Clancy, Steve Pieczenik - [Op-Center 16] - Dark Zone - Jeff Rovin, George Galdorisi (retail) (epub).epub',
+        downloaded_format: 'epub',
+        size: '2.0MB',
+        labels: [],
+        country: nil
       }
 
+      # ,
+      # {
+      #   line: '',
+      #   source: '',
+      #   author: '',
+      #   title: '',
+      #   book_format: '',
+      #   series: '',
+      #   series_number: '',
+      #   book_version: nil,
+      #   filename: '',
+      #   downloaded_format: '',
+      #   size: nil,
+      #   labels: [],
+      #   country: nil
+      # }
     ]
 
     @phrases_with_labels = [

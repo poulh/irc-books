@@ -13,7 +13,7 @@ module Irc
       LABEL_REGEX = /(.*)[\[\(](.*)[\)\]]/.freeze
       BOOK_VERSION = ['v5.0', 'v4.0', 'retail'].freeze
       NUMBER_OPTIONAL_DECIMAL_REGEX = /\d+(\.\d+)?/.freeze
-      SERIES_REGEX = /\[?([a-zA-Z\s&']+)\s?(\d+(\.\d+)?)?\]?/.freeze
+      SERIES_REGEX = /\[?([a-zA-Z\s\-&']+)\s?(\d+(\.\d+)?)?\]?/.freeze
       PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s\-&']+)\s?(\d+(\.\d+)?)\]/.freeze # \d+\.?\d*
       BOOK_FORMAT = %w[epub mobi].freeze
       BOOK_COUNTRY = %w[US FR UK].freeze
