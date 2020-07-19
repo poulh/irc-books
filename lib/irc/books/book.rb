@@ -6,7 +6,7 @@ module Irc
     class Book
       attr_accessor :line, :source, :series, :author,
                     :title, :downloaded_format, :size,
-                    :book_version, :book_format, :labels
+                    :book_version, :book_format, :labels, :country
       attr_reader :series_number
 
       def initialize(line:, source:, author:, title:, downloaded_format:, size:, series:, series_number:, book_version:, book_format:, labels:)
@@ -27,17 +27,17 @@ module Irc
 
       def to_s
         <<~BOOKDOC
-          Line: #{@line}
-          Source: #{@source}
-          Book Version: #{@book_version}
-          Book Format: #{@book_format}
           Author: #{@author}
-          Title: #{@title}
           Series: #{@series} (#{@series_number})
+          Title: #{@title}
+          Book Version: #{@book_version}
+          Book Country: #{@book_country}
+          Book Format: #{@book_format}
+          Source: #{@source}
           Download Format: #{@downloaded_format}
           Size: #{@size}
           Labels: #{@labels}
-
+          Line: #{@line}
         BOOKDOC
       end
 

@@ -6,7 +6,7 @@ module Irc
   module Books
     # groups books by author, series, and prunes to retail editions if possible
     class BookSorter
-      DEFAULT_GROUP_BY = %i[author series series_number title].freeze
+      DEFAULT_GROUP_BY = %i[country author series series_number title].freeze
       def self.display_each_book(books)
         book_groups = group_books_by(books, DEFAULT_GROUP_BY)
         sort_book_groups!(book_groups)
@@ -55,7 +55,7 @@ module Irc
           series_num = book[:series_number] || '?'
           series = "#{book[:series]} (#{series_num}) - "
         end
-        "#{book[:author]} <-> #{series} <-> #{book[:title]}"
+        "#{book[:country]} <-> #{book[:author]} <-> #{series} <-> #{book[:title]}"
       end
     end
   end

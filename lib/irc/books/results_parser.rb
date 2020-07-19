@@ -16,6 +16,7 @@ module Irc
       SERIES_REGEX = /\[?([a-zA-Z\s&]+)\s?(\d+(\.\d+)?)?\]?/.freeze
       PHRASE_SERIES_REGEX = /(.*)\[([a-zA-Z\s\-&]+)\s?(\d+(\.\d+)?)\]/.freeze # \d+\.?\d*
       BOOK_FORMAT = %w[epub mobi].freeze
+      BOOK_COUNTRY = %w[US FR UK].freeze
       PARSERS = [
         {
           name: 'Series Book Parser',
@@ -60,7 +61,7 @@ module Irc
           line: '', source: '', author: '', title: '',
           book_format: '', series: nil, series_number: nil,
           book_version: nil, downloaded_format: '', size: nil,
-          filename: '', labels: []
+          country: nil, filename: '', labels: []
         }
       end
 
@@ -73,14 +74,13 @@ module Irc
         match_array
       end
 
-      def self.delete_special_labels(special_values, labels)
+      def self.delete_special_labels!(labels, special_label_values)
         special_value = nil
-        special_values.each do |special|
-          idx = labels.find_index { |i| i.downcase == special.downcase }
+        special_label_values.each do |special_label_value|
+          idx = labels.find_index { |label| label.downcase == special_label_value.downcase }
           unless idx.nil?
-
             labels.delete_at(idx)
-            special_value = special
+            special_value = special_label_value
           end
 
           break if special_value
@@ -116,8 +116,9 @@ module Irc
 
         parts[-1], labels = parse_labels_off_phrase(parts[-1])
 
-        labels, book_hash[:book_version] = delete_special_labels(BOOK_VERSION, labels)
-        labels, book_hash[:book_format] = delete_special_labels(BOOK_FORMAT, labels)
+        labels, book_hash[:book_version] = delete_special_labels!(labels, BOOK_VERSION)
+        labels, book_hash[:book_format] = delete_special_labels!(labels, BOOK_FORMAT)
+        labels, book_hash[:country] = delete_special_labels!(labels, BOOK_COUNTRY)
         unless book_hash[:book_format]
           book_hash[:book_format] = book_hash[:downloaded_format]
         end
