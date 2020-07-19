@@ -256,6 +256,21 @@ class ResultParserTest < Minitest::Test
         size: nil,
         labels: [],
         country: 'FR'
+      },
+      {
+        line: "!Xon James Patterson - [Women's Murder Club 11] - 11th Hour - Maxine Paetro (epub).rar",
+        source: 'Xon',
+        author: 'James Patterson',
+        title: '11th Hour',
+        book_format: 'epub',
+        series: "Women's Murder Club",
+        series_number: '11',
+        book_version: nil,
+        filename: "James Patterson - [Women's Murder Club 11] - 11th Hour - Maxine Paetro (epub).rar",
+        downloaded_format: 'rar',
+        size: nil,
+        labels: [],
+        country: nil
       }
 
     ]
