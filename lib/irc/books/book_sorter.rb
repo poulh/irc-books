@@ -8,6 +8,10 @@ module Irc
     class BookSorter
       DEFAULT_GROUP_BY = %i[country author series series_number title].freeze
       def self.display_each_book(books)
+        books.each do |book|
+          book[:series_number] = parse_book_series_number(book[:series_number])
+        end
+
         book_groups = group_books_by(books, DEFAULT_GROUP_BY)
         sort_book_groups!(book_groups)
 
@@ -15,8 +19,20 @@ module Irc
         book_keys.each do |book_key|
           books_in_group = book_groups[book_key]
           top_book = books_in_group[0]
-          yield("#{book_key} ---> #{top_book[:book_version]} ---> #{top_book[:line]}", top_book)
+          display_book = book_display_name(top_book) # this is the book key, just not downcased
+          yield("#{display_book} ---> #{top_book[:book_version]} ---> #{top_book[:line]}", top_book)
         end
+      end
+
+      def self.parse_book_series_number(series_number_string)
+        series_number = nil
+        begin
+          series_number = Float(series_number_string).to_s.rjust(6, '0')
+        rescue StandardError => _e
+          series_number = nil
+        end
+
+        series_number
       end
 
       def self.sort_book_groups!(book_groups)
@@ -29,14 +45,14 @@ module Irc
         groups = Hash.new { |hash, key| hash[key] = [] }
 
         books.each do |book|
-          book_key = book_display_name(book)
+          book_key = book_display_name(book).downcase
 
           groups[book_key] << book
         end
         groups
       end
 
-      def self.sort_and_uniq_book_versions(_books)
+      def self.sort_and_uniq_book_versions(books)
         books.sort! { |a, b| book_version_sort(b) <=> book_version_sort(a) }
         books.uniq! { |b| book_version_sort(b) }
 
