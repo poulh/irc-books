@@ -16,18 +16,21 @@ module Irc
         sort_book_groups!(book_groups)
 
         book_keys = book_groups.keys.sort
-        book_keys.each do |book_key|
+        book_key_count = book_groups.keys.count
+        book_keys.each_with_index do |book_key, idx|
           books_in_group = book_groups[book_key]
           top_book = books_in_group[0]
           display_book = book_display_name(top_book) # this is the book key, just not downcased
-          yield("#{display_book} ---> #{top_book[:book_version]} ---> #{top_book[:line]}", top_book)
+          # ---> #{top_book[:line]}
+          tabular_name = "#{(top_book[:book_version] or '-').ljust(10)} #{display_book}"
+          yield(tabular_name, top_book, idx, book_key_count)
         end
       end
 
       def self.parse_book_series_number(series_number_string)
         series_number = nil
         begin
-          series_number = Float(series_number_string).to_s.rjust(6, '0')
+          series_number = Float(series_number_string).to_s.rjust(6, ' ')
         rescue StandardError => _e
           series_number = nil
         end
@@ -71,7 +74,7 @@ module Irc
           series_num = book[:series_number] || '?'
           series = "#{book[:series]} (#{series_num}) - "
         end
-        "#{book[:country]} <-> #{book[:author]} <-> #{series} <-> #{book[:title]}"
+        "#{(book[:country] or ' ').ljust(4)} #{(book[:author] or 'Uknown Author').ljust(60)} #{(book[:series_number] or ' ').ljust(6)} #{(book[:series] or '-').ljust(50)} #{book[:title]}"
       end
     end
   end

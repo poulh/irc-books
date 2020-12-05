@@ -157,8 +157,15 @@ module Irc
             ml.go_back_choice(book_menu, 'Main Menu')
 
             books = @search_model.search_results[search]
-            Irc::Books::BookSorter.display_each_book(books) do |book_display_name, book|
-              book_menu.choice(book_display_name) do
+            Irc::Books::BookSorter.display_each_book(books) do |book_display_name, book, idx, total_count|
+              last_menu_number = total_count + 1
+              menu_number = idx + 2 # 1 for zero based, one for first item is Main Menu
+              ljust_shift = last_menu_number.to_s.length - menu_number.to_s.length
+              # puts "#{total_count} #{total_count.to_s.length} #{idx} #{idx.to_s.length} #{menu_number} #{menu_number.to_s.length} #{}"
+              # ljust_shift = total_count.to_s.length - idx.to_s.length
+              ljust_shift_str = " " * ljust_shift
+
+              book_menu.choice(ljust_shift_str + book_display_name) do
                 yield_choice(command: DOWNLOAD, download_bot: book[:source], title: book[:filename], phrase: book[:line])
               end
             end
