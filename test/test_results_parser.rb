@@ -336,6 +336,9 @@ class ResultParserTest < Minitest::Test
       # }
     ]
 
+    # 299.  <-> James Patterson <-> BookShots (?) -  <-> Mitchum 02] ---  James Patterson - [BookShots - Mitchum 02] - Malicious - James O Born (retail) (epub).rar
+    # 379.  <-> James Patterson <-> Middle School (?) -  <-> I Funny 03] ---  James Patterson - [Middle School - I Funny 03] - I Totally Funniest - Chris Grabenstein (retail) (epub).epub
+
     @phrases_with_labels = [
       {
         original: 'foo (bar)',
